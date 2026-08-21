@@ -154,10 +154,6 @@
     </div>
     <input type="file" id="fileInput" accept="image/*" />
 
-    <div class="row">
-      <button id="shuffleBtn">🔀 Shuffle Text Colors</button>
-    </div>
-
     <label class="small">Post Format</label>
     <div class="row">
       <button id="squareBtn" class="toggle active">⬛ Square (1:1)</button>
@@ -208,7 +204,6 @@
   const zoomVal = document.getElementById('zoomVal');
   const colorRow = document.getElementById('colorRow');
   const fileInput = document.getElementById('fileInput');
-  const shuffleBtn = document.getElementById('shuffleBtn');
   const squareBtn = document.getElementById('squareBtn');
   const portraitBtn = document.getElementById('portraitBtn');
 
@@ -229,158 +224,14 @@
     centerX: null,    // center point of the crop window, in source-image pixels
     centerY: null,
     cropW: null,      // last computed crop window size (used by drag handler for scaling)
-    cropH: null,
-    colorPalette: ['#FFD54F', '#4FC3F7', '#66BB6A', '#FF6EC7', '#BA68C8', '#FFA726']
-    // ^ current curated brand palette for accent words (cycled through in order, shuffle rotates palettes)
+    cropH: null
   };
 
-  // ---- Shuffle: curated brand palettes (kept harmonious for consistent page identity) ----
-  const BRAND_PALETTES = [
-    ['#FFD54F', '#4FC3F7', '#66BB6A', '#FF6EC7', '#BA68C8', '#FFA726'],
-    ['#FFCA28', '#29B6F6', '#26A69A', '#EC407A', '#7E57C2', '#9CCC65'],
-    ['#FF8A65', '#4DD0E1', '#AED581', '#F06292', '#9575CD', '#FFD180']
-  ];
-  let paletteCursor = 0;
-
-  function shuffleArray(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
-
-  // ---- Automatic focus-word coloring (rule-based classifier) ----
-  const COLORS = {
-    number:    '#FFD54F', // amber - numbers, quantities, units
-    danger:    '#FF5252', // red - danger/threat/predator words
-    time:      '#BA68C8', // purple - time/age/era words
-    highlight: '#4FC3F7', // cyan - superlatives / "only", "first", etc.
-    wonder:    '#FF6EC7', // pink - amazing/unusual/surprising words
-    subject:   '#66BB6A', // green - proper nouns / the fact's subject
-    normal:    '#ffffff'
-  };
-
-  const DANGER_WORDS = new Set([
-    'poisonous','poison','toxic','toxins','toxin','deadly','dangerous','lethal',
-    'venomous','venom','kill','killer','kills','killed','extinct','endangered',
-    'danger','fatal','deathly','predator','predators','prey','attack','attacks',
-    'sting','stings','bite','bites','fangs','claws','threat','threatened','hunt',
-    'hunts','hunted','aggressive','vicious','carnivore','carnivorous','warning',
-    'harmful','hazard','hazardous','infected','disease','virus','venomously'
-  ]);
-
-  const TIME_WORDS = new Set([
-    'ancient','prehistoric','million','millions','billion','billions','century',
-    'centuries','decade','decades','era','eras','fossil','fossils','extinction',
-    'evolved','evolution','years','year','decade','millennia','millennium',
-    'modern','historic','historical','dinosaur','dinosaurs','origin','originated'
-  ]);
-
-  const HIGHLIGHT_WORDS = new Set([
-    'first','only','largest','smallest','biggest','tallest','fastest','rarest',
-    'rare','unique','oldest','newest','record','never','always','every','most',
-    'least','strongest','heaviest','lightest','highest','lowest','longest',
-    'shortest','deepest','loudest','quietest','sole','single','exclusively',
-    'solely','uniquely'
-  ]);
-
-  const WONDER_WORDS = new Set([
-    'amazing','incredible','surprising','surprisingly','unusual','fascinating',
-    'remarkable','extraordinary','unbelievable','mysterious','magical','weird',
-    'bizarre','strange','astonishing','stunning','curious','peculiar','odd',
-    'shocking','wonderful','fascinatingly','oddly','interestingly','notably',
-    'impressive','marvel','marvelous','spectacular'
-  ]);
-
-  const QUANTITY_WORDS = new Set([
-    'many','few','dozens','hundreds','thousands','several','multiple','some',
-    'numerous','countless','majority','minority','half','quarter','double',
-    'triple','times','percent','percentage'
-  ]);
-
-  const UNIT_WORDS = new Set([
-    'kg','km','cm','mm','mph','kmh','lbs','lb','ft','feet','inch','inches',
-    'meter','meters','metre','metres','mile','miles','ton','tons','tonne',
-    'tonnes','gram','grams','kilogram','kilograms','celsius','fahrenheit',
-    'litre','litres','liter','liters','gallon','gallons','hz','watt','watts'
-  ]);
-
-  // words that end in "est" but are NOT superlatives (avoid false positives)
-  // Pronouns are never colored and never counted in the alternate white/color pattern
-  const PRONOUNS = new Set([
-    'i','you','he','she','it','we','they','me','him','her','us','them',
-    'my','your','his','her','its','our','their','mine','yours','hers','ours','theirs',
-    'myself','yourself','himself','herself','itself','ourselves','yourselves','themselves',
-    'who','whom','whose','which','what','whoever','whomever','whichever','whatever',
-    'anyone','anybody','anything','someone','somebody','something','no one','nobody','nothing',
-    'each','either','neither','one','another','other','others','few','many','several',
-    'all','both','some','any','none'
-  ]);
-
-  const EST_EXCLUSIONS = new Set([
-    'chest','forest','interest','request','protest','honest','modest','arrest',
-    'quest','west','rest','test','best','vest','crest','wrest','conquest',
-    'contest','digest','harvest','invest','manifest','zest'
-  ]);
-
-  function stripPunct(w) {
-    return w.replace(/^[^\w]+|[^\w]+$/g, '');
-  }
-
-  function isSuperlative(lower) {
-    if (lower.length < 5) return false;
-    if (!lower.endsWith('est')) return false;
-    if (EST_EXCLUSIONS.has(lower)) return false;
-    return true;
-  }
-
-  function isPronoun(word) {
-    const clean = stripPunct(word).toLowerCase();
-    return PRONOUNS.has(clean);
-  }
-
-  // Classifies a word into a semantic color, or null if it doesn't match any category.
-  function classifyWord(word) {
-    const clean = stripPunct(word).toLowerCase();
-    if (!clean) return null;
-    if (/^\d+([.,]\d+)?%?$/.test(clean)) return COLORS.number;
-    if (UNIT_WORDS.has(clean) || QUANTITY_WORDS.has(clean)) return COLORS.number;
-    if (DANGER_WORDS.has(clean)) return COLORS.danger;
-    if (TIME_WORDS.has(clean)) return COLORS.time;
-    if (HIGHLIGHT_WORDS.has(clean) || isSuperlative(clean)) return COLORS.highlight;
-    if (WONDER_WORDS.has(clean)) return COLORS.wonder;
-    return null;
-  }
+  // ---- Fact text renders in a single, consistent color (no per-word highlighting) ----
+  const TEXT_COLOR = '#ffffff';
 
   function buildTokens(text) {
-    const words = text.split(/\s+/).filter(Boolean);
-    const palette = state.colorPalette;
-    let paletteIndex = 0;
-    let unclassifiedCounter = 0;
-    return words.map((w, idx) => {
-      if (isPronoun(w)) return { text: w, color: COLORS.normal };
-
-      const semantic = classifyWord(w);
-      if (semantic) return { text: w, color: semantic };
-
-      // capitalized word mid-sentence -> likely a proper noun / the fact's subject
-      const clean = stripPunct(w);
-      if (idx > 0 && /^[A-Z]/.test(clean) && clean.length > 1) {
-        return { text: w, color: COLORS.subject };
-      }
-
-      // fallback: give every 3rd unclassified word an accent color from the brand
-      // palette so the card still has visual rhythm even on plain sentences
-      unclassifiedCounter++;
-      if (unclassifiedCounter % 3 === 0) {
-        const color = palette[paletteIndex % palette.length];
-        paletteIndex++;
-        return { text: w, color };
-      }
-      return { text: w, color: COLORS.normal };
-    });
+    return text.split(/\s+/).filter(Boolean).map((w) => ({ text: w, color: TEXT_COLOR }));
   }
 
   function wrapTokens(context, tokens, maxWidth) {
@@ -508,8 +359,7 @@
     let startY = textAreaCenterY - totalTextHeight / 2 + lineHeight / 2;
 
     lines.forEach((line, i) => {
-      const lineWidth = line.reduce((sum, t, idx) => sum + t.width + (idx > 0 ? spaceWidth : 0), 0);
-      let x = CARD_W / 2 - lineWidth / 2;
+      let x = paddingX;
       const y = startY + i * lineHeight;
       line.forEach(tok => {
         ctx.fillStyle = tok.color;
@@ -641,12 +491,6 @@
     document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
     sw.classList.add('selected');
     state.bgColor = sw.dataset.color;
-    drawCard();
-  });
-
-  shuffleBtn.addEventListener('click', () => {
-    paletteCursor = (paletteCursor + 1) % BRAND_PALETTES.length;
-    state.colorPalette = shuffleArray(BRAND_PALETTES[paletteCursor]);
     drawCard();
   });
 
