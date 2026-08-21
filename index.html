@@ -134,48 +134,64 @@
     text-align: center;
     margin-top: 6px;
   }
+  .preview-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #121212;
+    padding: 10px 0 8px;
+    margin: 0 -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+    box-shadow: 0 8px 12px -6px rgba(0,0,0,0.5);
+  }
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #4FC3F7;
+    margin: 6px 0 2px;
+    padding-top: 14px;
+    border-top: 1px solid #2a2a2a;
+  }
+  .controls > .section-title:first-child { border-top: none; padding-top: 0; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Fact Card Maker</h1>
-
-  <div class="canvas-container" id="canvasContainer">
-    <canvas id="card" width="1080" height="1080"></canvas>
-    <div class="placeholder-btn" id="placeholderHint">Neeche button se image select karein</div>
-    <div class="divider" id="divider"><div class="bar"></div></div>
+  <div class="preview-sticky">
+    <div class="canvas-container" id="canvasContainer">
+      <canvas id="card" width="1080" height="1080"></canvas>
+      <div class="placeholder-btn" id="placeholderHint">Neeche button se image select karein</div>
+      <div class="divider" id="divider"><div class="bar"></div></div>
+    </div>
   </div>
-  <div class="hint">📌 Image par ungli rakh ke drag karein — position adjust karne ke liye. Crop tight karne ke liye neeche "Zoom" slider use karein</div>
 
   <div class="controls">
+    <div class="section-title">1 · Image</div>
     <div class="row">
       <button id="pickImageBtn">📷 Image Select Karein</button>
-      <button id="saveBtn" class="primary">💾 Save Post</button>
     </div>
     <input type="file" id="fileInput" accept="image/*" />
-
-    <label class="small">Post Format</label>
-    <div class="row">
-      <button id="squareBtn" class="toggle active">⬛ Square (1:1)</button>
-      <button id="portraitBtn" class="toggle">▯ Portrait (4:5)</button>
-    </div>
-
-    <textarea id="factText" placeholder="Yahan apna fact / text likhein...">TEXT_HERE</textarea>
-
-    <label class="small">Category Badge (image ke top-left par dikhega)</label>
-    <input type="text" id="categoryTag" value="AI" placeholder="e.g. AI, SPACE, BIOLOGY" maxlength="16" />
-
-    <label class="small">Source (optional, card ke niche chhote text me)</label>
-    <input type="text" id="sourceText" placeholder="e.g. Source: Nature Journal" maxlength="60" />
-
-    <label class="small">Font Size <span id="fontSizeVal">44</span>px
-      <input type="range" id="fontSize" min="20" max="90" value="44" />
-    </label>
+    <div class="hint">📌 Image par ungli rakh ke drag karein — position adjust karne ke liye</div>
 
     <label class="small">Image Zoom / Crop <span id="zoomVal">100</span>%
       <input type="range" id="zoom" min="100" max="300" value="100" />
     </label>
 
+    <div class="section-title">2 · Format</div>
+    <div class="row">
+      <button id="squareBtn" class="toggle active">⬛ Square (1:1)</button>
+      <button id="portraitBtn" class="toggle">▯ Portrait (4:5)</button>
+    </div>
+
+    <div class="section-title">3 · Fact Text</div>
+    <textarea id="factText" placeholder="Yahan apna fact / text likhein...">TEXT_HERE</textarea>
+    <label class="small">Font Size <span id="fontSizeVal">44</span>px
+      <input type="range" id="fontSize" min="20" max="90" value="44" />
+    </label>
     <label class="small">Text Area Background</label>
     <div class="color-row" id="colorRow">
       <div class="swatch selected" data-color="#000000" style="background:#000000"></div>
@@ -185,6 +201,16 @@
       <div class="swatch" data-color="#20142e" style="background:#20142e"></div>
     </div>
 
+    <div class="section-title">4 · Branding</div>
+    <label class="small">Category Badge (image ke top-left par dikhega)</label>
+    <input type="text" id="categoryTag" value="AI" placeholder="e.g. AI, SPACE, BIOLOGY" maxlength="16" />
+    <label class="small">Source (optional, card ke niche chhote text me)</label>
+    <input type="text" id="sourceText" placeholder="e.g. Source: Nature Journal" maxlength="60" />
+
+    <div class="section-title">5 · Export</div>
+    <div class="row">
+      <button id="saveBtn" class="primary">💾 Save Post</button>
+    </div>
     <div class="hint">Save karne par image "Downloads" folder mein save hogi</div>
   </div>
 </div>
