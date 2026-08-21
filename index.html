@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Fact Card Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #121212;
+    font-family: 'Inter', -apple-system, Roboto, 'Segoe UI', sans-serif;
+    color: #fff;
+    min-height: 100%;
+  }
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 14px;
+    padding-bottom: 40px;
+  }
+  h1 {
+    font-size: 18px;
+    text-align: center;
+    margin: 4px 0 14px;
+    font-weight: 600;
+    color: #eee;
+  }
+  .canvas-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    touch-action: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  canvas#card {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .placeholder-btn {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 14px;
+    pointer-events: none;
+    text-align: center;
+    padding: 0 20px;
+  }
+  .divider {
+    position: absolute;
+    left: 0; right: 0;
+    height: 32px;
+    margin-top: -16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: ns-resize;
+    z-index: 5;
+  }
+  .divider .bar {
+    width: 50px;
+    height: 6px;
+    background: #4CAF50;
+    border-radius: 3px;
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.35);
+  }
+  .controls {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .row { display: flex; gap: 10px; }
+  button {
+    flex: 1;
+    background: #2b2b2b;
+    color: #fff;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 14px 10px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+  }
+  button:active { background: #3a3a3a; }
+  button.primary { background: #4CAF50; border-color: #4CAF50; }
+  button.primary:active { background: #43a047; }
+  button.toggle.active { background: #29B6F6; border-color: #29B6F6; }
+  textarea, input[type=text] {
+    width: 100%;
+    background: #1c1c1c;
+    color: #fff;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 15px;
+    resize: none;
+    min-height: 80px;
+    font-family: 'Inter', sans-serif;
+  }
+  input[type=text] { min-height: unset; }
+  label.small {
+    font-size: 13px;
+    color: #aaa;
+    display: flex;
+    justify-content: space-between;
+  }
+  input[type=range] { width: 100%; }
+  .color-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .swatch {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid #555;
+  }
+  .swatch.selected { border-color: #4CAF50; border-width: 3px; }
+  #fileInput { display: none; }
+  .hint {
+    font-size: 12px;
+    color: #777;
+    text-align: center;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fact Card Maker</h1>
+
+  <div class="canvas-container" id="canvasContainer">
+    <canvas id="card" width="1080" height="1080"></canvas>
+    <div class="placeholder-btn" id="placeholderHint">Neeche button se image select karein</div>
+    <div class="divider" id="divider"><div class="bar"></div></div>
+  </div>
+  <div class="hint">📌 Image par ungli rakh ke drag karein — position adjust karne ke liye. Crop tight karne ke liye neeche "Zoom" slider use karein</div>
+
+  <div class="controls">
+    <div class="row">
+      <button id="pickImageBtn">📷 Image Select Karein</button>
+      <button id="saveBtn" class="primary">💾 Save Post</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" />
+
+    <div class="row">
+      <button id="shuffleBtn">🔀 Shuffle Text Colors</button>
+    </div>
+
+    <label class="small">Post Format</label>
+    <div class="row">
+      <button id="squareBtn" class="toggle active">⬛ Square (1:1)</button>
+      <button id="portraitBtn" class="toggle">▯ Portrait (4:5)</button>
+    </div>
+
+    <textarea id="factText" placeholder="Yahan apna fact / text likhein...">TEXT_HERE</textarea>
+
+    <label class="small">Category Badge (image ke top-left par dikhega)</label>
+    <input type="text" id="categoryTag" value="AI" placeholder="e.g. AI, SPACE, BIOLOGY" maxlength="16" />
+
+    <label class="small">Source (optional, card ke niche chhote text me)</label>
+    <input type="text" id="sourceText" placeholder="e.g. Source: Nature Journal" maxlength="60" />
+
+    <label class="small">Font Size <span id="fontSizeVal">44</span>px
+      <input type="range" id="fontSize" min="20" max="90" value="44" />
+    </label>
+
+    <label class="small">Image Zoom / Crop <span id="zoomVal">100</span>%
+      <input type="range" id="zoom" min="100" max="300" value="100" />
+    </label>
+
+    <label class="small">Text Area Background</label>
+    <div class="color-row" id="colorRow">
+      <div class="swatch selected" data-color="#000000" style="background:#000000"></div>
+      <div class="swatch" data-color="#12121f" style="background:#12121f"></div>
+      <div class="swatch" data-color="#0f2027" style="background:#0f2027"></div>
+      <div class="swatch" data-color="#1b1b2f" style="background:#1b1b2f"></div>
+      <div class="swatch" data-color="#20142e" style="background:#20142e"></div>
+    </div>
+
+    <div class="hint">Save karne par image "Downloads" folder mein save hogi</div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('card');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('canvasContainer');
+  const divider = document.getElementById('divider');
+  const placeholderHint = document.getElementById('placeholderHint');
+  const factText = document.getElementById('factText');
+  const categoryTag = document.getElementById('categoryTag');
+  const sourceText = document.getElementById('sourceText');
+  const fontSizeInput = document.getElementById('fontSize');
+  const fontSizeVal = document.getElementById('fontSizeVal');
+  const zoomInput = document.getElementById('zoom');
+  const zoomVal = document.getElementById('zoomVal');
+  const colorRow = document.getElementById('colorRow');
+  const fileInput = document.getElementById('fileInput');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const squareBtn = document.getElementById('squareBtn');
+  const portraitBtn = document.getElementById('portraitBtn');
+
+  // ---- Card dimensions: width is always 1080, height depends on chosen format ----
+  const CARD_W = 1080;
+  let CARD_H = 1080;
+
+  let state = {
+    image: null,
+    splitRatio: 0.62,
+    fontSize: 44,
+    bgColor: '#000000',
+    text: factText.value,
+    category: categoryTag.value,
+    source: sourceText.value,
+    aspect: 'square',
+    zoom: 1,          // 1 = fully fit (no extra crop), higher = zoomed in / more cropped
+    centerX: null,    // center point of the crop window, in source-image pixels
+    centerY: null,
+    cropW: null,      // last computed crop window size (used by drag handler for scaling)
+    cropH: null,
+    colorPalette: ['#FFD54F', '#4FC3F7', '#66BB6A', '#FF6EC7', '#BA68C8', '#FFA726']
+    // ^ current curated brand palette for accent words (cycled through in order, shuffle rotates palettes)
+  };
+
+  // ---- Shuffle: curated brand palettes (kept harmonious for consistent page identity) ----
+  const BRAND_PALETTES = [
+    ['#FFD54F', '#4FC3F7', '#66BB6A', '#FF6EC7', '#BA68C8', '#FFA726'],
+    ['#FFCA28', '#29B6F6', '#26A69A', '#EC407A', '#7E57C2', '#9CCC65'],
+    ['#FF8A65', '#4DD0E1', '#AED581', '#F06292', '#9575CD', '#FFD180']
+  ];
+  let paletteCursor = 0;
+
+  function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ---- Automatic focus-word coloring (rule-based classifier) ----
+  const COLORS = {
+    number:    '#FFD54F', // amber - numbers, quantities, units
+    danger:    '#FF5252', // red - danger/threat/predator words
+    time:      '#BA68C8', // purple - time/age/era words
+    highlight: '#4FC3F7', // cyan - superlatives / "only", "first", etc.
+    wonder:    '#FF6EC7', // pink - amazing/unusual/surprising words
+    subject:   '#66BB6A', // green - proper nouns / the fact's subject
+    normal:    '#ffffff'
+  };
+
+  const DANGER_WORDS = new Set([
+    'poisonous','poison','toxic','toxins','toxin','deadly','dangerous','lethal',
+    'venomous','venom','kill','killer','kills','killed','extinct','endangered',
+    'danger','fatal','deathly','predator','predators','prey','attack','attacks',
+    'sting','stings','bite','bites','fangs','claws','threat','threatened','hunt',
+    'hunts','hunted','aggressive','vicious','carnivore','carnivorous','warning',
+    'harmful','hazard','hazardous','infected','disease','virus','venomously'
+  ]);
+
+  const TIME_WORDS = new Set([
+    'ancient','prehistoric','million','millions','billion','billions','century',
+    'centuries','decade','decades','era','eras','fossil','fossils','extinction',
+    'evolved','evolution','years','year','decade','millennia','millennium',
+    'modern','historic','historical','dinosaur','dinosaurs','origin','originated'
+  ]);
+
+  const HIGHLIGHT_WORDS = new Set([
+    'first','only','largest','smallest','biggest','tallest','fastest','rarest',
+    'rare','unique','oldest','newest','record','never','always','every','most',
+    'least','strongest','heaviest','lightest','highest','lowest','longest',
+    'shortest','deepest','loudest','quietest','sole','single','exclusively',
+    'solely','uniquely'
+  ]);
+
+  const WONDER_WORDS = new Set([
+    'amazing','incredible','surprising','surprisingly','unusual','fascinating',
+    'remarkable','extraordinary','unbelievable','mysterious','magical','weird',
+    'bizarre','strange','astonishing','stunning','curious','peculiar','odd',
+    'shocking','wonderful','fascinatingly','oddly','interestingly','notably',
+    'impressive','marvel','marvelous','spectacular'
+  ]);
+
+  const QUANTITY_WORDS = new Set([
+    'many','few','dozens','hundreds','thousands','several','multiple','some',
+    'numerous','countless','majority','minority','half','quarter','double',
+    'triple','times','percent','percentage'
+  ]);
+
+  const UNIT_WORDS = new Set([
+    'kg','km','cm','mm','mph','kmh','lbs','lb','ft','feet','inch','inches',
+    'meter','meters','metre','metres','mile','miles','ton','tons','tonne',
+    'tonnes','gram','grams','kilogram','kilograms','celsius','fahrenheit',
+    'litre','litres','liter','liters','gallon','gallons','hz','watt','watts'
+  ]);
+
+  // words that end in "est" but are NOT superlatives (avoid false positives)
+  // Pronouns are never colored and never counted in the alternate white/color pattern
+  const PRONOUNS = new Set([
+    'i','you','he','she','it','we','they','me','him','her','us','them',
+    'my','your','his','her','its','our','their','mine','yours','hers','ours','theirs',
+    'myself','yourself','himself','herself','itself','ourselves','yourselves','themselves',
+    'who','whom','whose','which','what','whoever','whomever','whichever','whatever',
+    'anyone','anybody','anything','someone','somebody','something','no one','nobody','nothing',
+    'each','either','neither','one','another','other','others','few','many','several',
+    'all','both','some','any','none'
+  ]);
+
+  const EST_EXCLUSIONS = new Set([
+    'chest','forest','interest','request','protest','honest','modest','arrest',
+    'quest','west','rest','test','best','vest','crest','wrest','conquest',
+    'contest','digest','harvest','invest','manifest','zest'
+  ]);
+
+  function stripPunct(w) {
+    return w.replace(/^[^\w]+|[^\w]+$/g, '');
+  }
+
+  function isSuperlative(lower) {
+    if (lower.length < 5) return false;
+    if (!lower.endsWith('est')) return false;
+    if (EST_EXCLUSIONS.has(lower)) return false;
+    return true;
+  }
+
+  function isPronoun(word) {
+    const clean = stripPunct(word).toLowerCase();
+    return PRONOUNS.has(clean);
+  }
+
+  // Classifies a word into a semantic color, or null if it doesn't match any category.
+  function classifyWord(word) {
+    const clean = stripPunct(word).toLowerCase();
+    if (!clean) return null;
+    if (/^\d+([.,]\d+)?%?$/.test(clean)) return COLORS.number;
+    if (UNIT_WORDS.has(clean) || QUANTITY_WORDS.has(clean)) return COLORS.number;
+    if (DANGER_WORDS.has(clean)) return COLORS.danger;
+    if (TIME_WORDS.has(clean)) return COLORS.time;
+    if (HIGHLIGHT_WORDS.has(clean) || isSuperlative(clean)) return COLORS.highlight;
+    if (WONDER_WORDS.has(clean)) return COLORS.wonder;
+    return null;
+  }
+
+  function buildTokens(text) {
+    const words = text.split(/\s+/).filter(Boolean);
+    const palette = state.colorPalette;
+    let paletteIndex = 0;
+    let unclassifiedCounter = 0;
+    return words.map((w, idx) => {
+      if (isPronoun(w)) return { text: w, color: COLORS.normal };
+
+      const semantic = classifyWord(w);
+      if (semantic) return { text: w, color: semantic };
+
+      // capitalized word mid-sentence -> likely a proper noun / the fact's subject
+      const clean = stripPunct(w);
+      if (idx > 0 && /^[A-Z]/.test(clean) && clean.length > 1) {
+        return { text: w, color: COLORS.subject };
+      }
+
+      // fallback: give every 3rd unclassified word an accent color from the brand
+      // palette so the card still has visual rhythm even on plain sentences
+      unclassifiedCounter++;
+      if (unclassifiedCounter % 3 === 0) {
+        const color = palette[paletteIndex % palette.length];
+        paletteIndex++;
+        return { text: w, color };
+      }
+      return { text: w, color: COLORS.normal };
+    });
+  }
+
+  function wrapTokens(context, tokens, maxWidth) {
+    const spaceWidth = context.measureText(' ').width;
+    const lines = [];
+    let currentLine = [];
+    let currentWidth = 0;
+    tokens.forEach(tok => {
+      const w = context.measureText(tok.text).width;
+      const addWidth = currentLine.length ? spaceWidth + w : w;
+      if (currentWidth + addWidth > maxWidth && currentLine.length) {
+        lines.push(currentLine);
+        currentLine = [{ ...tok, width: w }];
+        currentWidth = w;
+      } else {
+        currentLine.push({ ...tok, width: w });
+        currentWidth += addWidth;
+      }
+    });
+    if (currentLine.length) lines.push(currentLine);
+    return lines;
+  }
+
+  function drawRoundedRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawCard() {
+    ctx.clearRect(0, 0, CARD_W, CARD_H);
+    const splitY = Math.round(CARD_H * state.splitRatio);
+
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, CARD_W, splitY);
+
+    if (state.image) {
+      const img = state.image;
+      const targetW = CARD_W, targetH = splitY;
+      const targetRatio = targetW / targetH;
+      const imgRatio = img.width / img.height;
+
+      // base "fit" crop size at zoom = 1 (covers the target box exactly, no extra crop)
+      let baseW, baseH;
+      if (imgRatio > targetRatio) { baseH = img.height; baseW = baseH * targetRatio; }
+      else { baseW = img.width; baseH = baseW / targetRatio; }
+
+      const cropW = baseW / state.zoom;
+      const cropH = baseH / state.zoom;
+
+      // clamp the center point so the crop window never goes outside the image
+      state.centerX = Math.max(cropW / 2, Math.min(state.centerX, img.width - cropW / 2));
+      state.centerY = Math.max(cropH / 2, Math.min(state.centerY, img.height - cropH / 2));
+
+      const cropX = state.centerX - cropW / 2;
+      const cropY = state.centerY - cropH / 2;
+
+      state.cropW = cropW;
+      state.cropH = cropH;
+
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
+    }
+
+    // ---- Category badge: top-left pill on the image ----
+    const catLabel = (state.category || '').trim().toUpperCase();
+    if (catLabel) {
+      ctx.font = "700 26px 'Inter', sans-serif";
+      const padX = 18, padY = 10;
+      const textW = ctx.measureText(catLabel).width;
+      const badgeW = textW + padX * 2;
+      const badgeH = 26 + padY * 2;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      drawRoundedRect(32, 32, badgeW, badgeH, badgeH / 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1.5;
+      drawRoundedRect(32, 32, badgeW, badgeH, badgeH / 2);
+      ctx.stroke();
+      ctx.fillStyle = '#4FC3F7';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(catLabel, 32 + padX, 32 + badgeH / 2 + 1);
+    }
+
+    // ---- Watermark: small brand mark + "Cortexly" wordmark, top-right of image ----
+    ctx.font = "700 32px 'Poppins', sans-serif";
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const wmText = 'Cortexly';
+    const wmY = 52;
+    const wmTextW = ctx.measureText(wmText).width;
+    ctx.fillStyle = 'rgba(230,230,230,0.95)';
+    ctx.fillText(wmText, CARD_W - 40, wmY);
+    ctx.beginPath();
+    ctx.arc(CARD_W - 40 - wmTextW - 16, wmY, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#4FC3F7';
+    ctx.fill();
+
+    // ---- Soft gradient seam between image and text area (instead of a hard cut) ----
+    const seamHeight = 46;
+    const seamGrad = ctx.createLinearGradient(0, splitY - seamHeight, 0, splitY + seamHeight);
+    seamGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    seamGrad.addColorStop(1, state.bgColor);
+    ctx.fillStyle = state.bgColor;
+    ctx.fillRect(0, splitY, CARD_W, CARD_H - splitY);
+    ctx.fillStyle = seamGrad;
+    ctx.fillRect(0, splitY - seamHeight, CARD_W, seamHeight * 2);
+
+    const paddingX = 60;
+    const maxWidth = CARD_W - paddingX * 2;
+    ctx.font = `700 ${state.fontSize}px 'Poppins', sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    const spaceWidth = ctx.measureText(' ').width;
+    const tokens = buildTokens(state.text || '');
+    const lines = wrapTokens(ctx, tokens, maxWidth);
+    const lineHeight = state.fontSize * 1.3;
+    const totalTextHeight = lines.length * lineHeight;
+    const textAreaCenterY = splitY + (CARD_H - splitY) / 2;
+    let startY = textAreaCenterY - totalTextHeight / 2 + lineHeight / 2;
+
+    lines.forEach((line, i) => {
+      const lineWidth = line.reduce((sum, t, idx) => sum + t.width + (idx > 0 ? spaceWidth : 0), 0);
+      let x = CARD_W / 2 - lineWidth / 2;
+      const y = startY + i * lineHeight;
+      line.forEach(tok => {
+        ctx.fillStyle = tok.color;
+        ctx.fillText(tok.text, x, y);
+        x += tok.width + spaceWidth;
+      });
+    });
+
+    // ---- Optional source line, small text bottom-center of the text area ----
+    const src = (state.source || '').trim();
+    if (src) {
+      ctx.font = "500 22px 'Inter', sans-serif";
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(src, CARD_W / 2, CARD_H - 28);
+    }
+
+    // ---- Thin frame around the whole card for a finished, designed look ----
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, CARD_W - 6, CARD_H - 6);
+
+    const displayRatio = container.clientHeight / CARD_H;
+    divider.style.top = (splitY * displayRatio) + 'px';
+    placeholderHint.style.display = state.image ? 'none' : 'flex';
+    placeholderHint.style.height = (splitY * displayRatio) + 'px';
+  }
+
+  let dragging = false;
+  function ratioFromClientY(clientY) {
+    const rect = container.getBoundingClientRect();
+    let ratio = (clientY - rect.top) / rect.height;
+    return Math.max(0.2, Math.min(0.85, ratio));
+  }
+  divider.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    divider.setPointerCapture(e.pointerId);
+  });
+  divider.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    state.splitRatio = ratioFromClientY(e.clientY);
+    drawCard();
+  });
+  divider.addEventListener('pointerup', () => { dragging = false; });
+  divider.addEventListener('pointercancel', () => { dragging = false; });
+
+  // ---- Move/reposition the image by dragging it ----
+  let imgDragging = false;
+  let lastX = 0, lastY = 0;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!state.image) return;
+    const rect = container.getBoundingClientRect();
+    const splitYDisplay = rect.top + rect.height * state.splitRatio;
+    if (e.clientY >= splitYDisplay) return; // only drag within the image area, not the text area
+    imgDragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!imgDragging || !state.image) return;
+    const rect = container.getBoundingClientRect();
+    const dxDisplay = e.clientX - lastX;
+    const dyDisplay = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    // convert display-pixel movement to source-image-pixel movement
+    const displayImageHeight = rect.height * state.splitRatio;
+    const scaleFactorX = state.cropW / rect.width;
+    const scaleFactorY = state.cropH / displayImageHeight;
+
+    state.centerX -= dxDisplay * scaleFactorX;
+    state.centerY -= dyDisplay * scaleFactorY;
+
+    drawCard();
+  });
+
+  canvas.addEventListener('pointerup', (e) => {
+    imgDragging = false;
+    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+  });
+  canvas.addEventListener('pointercancel', () => { imgDragging = false; });
+
+  document.getElementById('pickImageBtn').addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        state.image = img;
+        state.zoom = 1;
+        state.centerX = img.width / 2;
+        state.centerY = img.height / 2;
+        zoomInput.value = 100;
+        zoomVal.textContent = 100;
+        drawCard();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  factText.addEventListener('input', () => { state.text = factText.value; drawCard(); });
+  categoryTag.addEventListener('input', () => { state.category = categoryTag.value; drawCard(); });
+  sourceText.addEventListener('input', () => { state.source = sourceText.value; drawCard(); });
+
+  fontSizeInput.addEventListener('input', () => {
+    state.fontSize = parseInt(fontSizeInput.value, 10);
+    fontSizeVal.textContent = state.fontSize;
+    drawCard();
+  });
+  zoomInput.addEventListener('input', () => {
+    state.zoom = parseInt(zoomInput.value, 10) / 100;
+    zoomVal.textContent = zoomInput.value;
+    drawCard();
+  });
+  colorRow.addEventListener('click', (e) => {
+    const sw = e.target.closest('.swatch');
+    if (!sw) return;
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+    sw.classList.add('selected');
+    state.bgColor = sw.dataset.color;
+    drawCard();
+  });
+
+  shuffleBtn.addEventListener('click', () => {
+    paletteCursor = (paletteCursor + 1) % BRAND_PALETTES.length;
+    state.colorPalette = shuffleArray(BRAND_PALETTES[paletteCursor]);
+    drawCard();
+  });
+
+  function setAspect(mode) {
+    state.aspect = mode;
+    CARD_H = mode === 'square' ? 1080 : 1350; // 4:5 portrait for feed reach
+    canvas.width = CARD_W;
+    canvas.height = CARD_H;
+    container.style.aspectRatio = mode === 'square' ? '1 / 1' : '4 / 5';
+    squareBtn.classList.toggle('active', mode === 'square');
+    portraitBtn.classList.toggle('active', mode === 'portrait');
+    drawCard();
+  }
+  squareBtn.addEventListener('click', () => setAspect('square'));
+  portraitBtn.addEventListener('click', () => setAspect('portrait'));
+
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'FactCard_' + Date.now() + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }, 'image/png');
+  });
+
+  window.addEventListener('resize', drawCard);
+  window.addEventListener('load', drawCard);
+  // Redraw once the Poppins/Inter webfonts finish loading so the card text
+  // doesn't briefly render in the fallback system font.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(drawCard);
+  }
+  drawCard();
+</script>
+</body>
+</html>
