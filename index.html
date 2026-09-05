@@ -190,6 +190,57 @@
   .card .meta a:hover{
     background:#FFF0EF;
   }
+  .toolbar{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 22px;
+    display:flex;
+    gap:22px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:14px;
+    box-shadow:0 10px 30px rgba(52,28,46,0.05);
+  }
+  .tool-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .tool-item input[type="color"]{
+    width:42px;
+    height:38px;
+    padding:0;
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    cursor:pointer;
+    background:none;
+  }
+  .tool-item input[type="range"]{
+    width:150px;
+    accent-color:var(--coral);
+    cursor:pointer;
+  }
+  .tool-item .value-pill{
+    font-size:12px;
+    font-weight:700;
+    color:var(--coral-dark);
+    min-width:40px;
+    text-align:center;
+  }
+  .btn-reset{
+    background:none;
+    border:none;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--muted);
+    text-decoration:underline;
+    cursor:pointer;
+    padding:4px 0;
+  }
   .empty-note{
     color:var(--muted);
     font-size:14px;
@@ -227,6 +278,21 @@
 
 <div class="wrap">
 
+  <div class="toolbar">
+    <div class="tool-item">
+      <label for="accentColor">🎨 Accent Colour</label>
+      <input type="color" id="accentColor" value="#FF6B6B" />
+      <button id="resetAccentBtn" class="btn-reset" type="button">Reset</button>
+    </div>
+    <button id="shuffleBtn" class="btn btn-secondary" type="button">🔀 Shuffle Gradient</button>
+    <div class="tool-item">
+      <label for="textSizeRange">🔠 Text Size</label>
+      <input type="range" id="textSizeRange" min="70" max="130" step="5" value="100" />
+      <span class="value-pill" id="textSizeValue">100%</span>
+    </div>
+  </div>
+  <div class="hint" style="margin:-4px 0 14px;">Accent Colour se number/highlight ka rang badlega · Shuffle Gradient se card/gradient designs (6, 8, 14) ka background theme badlega · Text Size se sabhi designs ka title font chhota-bada hoga. Change karne ke baad "Banao" dabaiye.</div>
+
   <div class="composer">
     <input id="titleInput" type="text" placeholder="Jaise: 5 Signs He's Really Falling For You" maxlength="120" />
     <button id="generateBtn" class="btn btn-primary">✨ 15 Pins + Story Banao</button>
@@ -253,6 +319,44 @@
 const PIN_W = 1000, PIN_H = 1500;
 const STORY_W = 1080, STORY_H = 1920;
 const WATERMARK_TEXT = "Relationship Cues";
+
+/* ---------------- CUSTOMISATION STATE (colour picker / shuffle / text size) ---------------- */
+let userAccentColor = null;   // set by the colour picker; overrides each template's default number/accent colour
+let fontScale = 1;            // set by the text-size slider; scales every template's title font size
+let paletteSeed = 0;          // shuffled by "Shuffle Gradient" — drives the solid-card templates
+let gradientSeed = 0;         // shuffled by "Shuffle Gradient" — drives the two-tone gradient templates
+
+const SOLID_PALETTES = [
+  {bg:'#EAF9E9', text:'#1C3B2E'},
+  {bg:'#FFEDE3', text:'#3D2352'},
+  {bg:'#E7F3FF', text:'#1B3358'},
+  {bg:'#FDEFF6', text:'#5C1F3E'},
+  {bg:'#F5F0FF', text:'#3B2560'},
+  {bg:'#FFF7DA', text:'#3A2E10'},
+  {bg:'#EAF6EF', text:'#123328'},
+  {bg:'#FDE8E8', text:'#4A1414'}
+];
+
+const GRADIENT_PAIRS = [
+  ['#845EC2','#FF6BCB'],
+  ['#4D96FF','#845EC2'],
+  ['#FF9A5B','#FF6B6B'],
+  ['#00C9A7','#4D96FF'],
+  ['#FFC75F','#FF6B6B'],
+  ['#7C2AE8','#FF6BCB'],
+  ['#0F6E5C','#0B4F73'],
+  ['#FF3E7F','#FF9A2E']
+];
+
+function accent(defaultColor){
+  return userAccentColor || defaultColor;
+}
+function getPalette(offset){
+  return SOLID_PALETTES[(paletteSeed + offset) % SOLID_PALETTES.length];
+}
+function getGradientPair(offset){
+  return GRADIENT_PAIRS[(gradientSeed + (offset||0)) % GRADIENT_PAIRS.length];
+}
 
 /* ---------------- BASIC UTILITIES ---------------- */
 function roundRect(ctx,x,y,w,h,r){
@@ -322,10 +426,12 @@ function fitTitle(ctx, rawTitle, opts){
   const words = title.split(' ').filter(Boolean);
   const numberIdx = words.findIndex(w => /\d/.test(w));
   const numberScale = opts.numberScale || 1.55;
-  let baseSize = opts.maxFont;
+  const maxFont = opts.maxFont * fontScale;
+  const minFont = Math.max(18, opts.minFont * fontScale);
+  let baseSize = maxFont;
   let chosen = null;
 
-  while(baseSize >= opts.minFont){
+  while(baseSize >= minFont){
     const wordSizes = words.map((w,i) => i===numberIdx ? Math.round(baseSize*numberScale) : baseSize);
     const wordWeights = words.map((w,i) => i===numberIdx ? '900' : (opts.weight || '700'));
 
@@ -353,7 +459,7 @@ function fitTitle(ctx, rawTitle, opts){
     const lineHeights = lines.map(line => Math.max(...line.map(i => wordSizes[i])) * (opts.lineHeightRatio || 1.15));
     const totalHeight = lineHeights.reduce((a,b) => a+b, 0);
 
-    if(totalHeight <= opts.maxHeight || baseSize <= opts.minFont){
+    if(totalHeight <= opts.maxHeight || baseSize <= minFont){
       chosen = { baseSize, words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, numberIdx };
       break;
     }
@@ -430,7 +536,7 @@ function drawT1(ctx,w,h,title){ // Sunset gradient
   blob(ctx, w*0.15, h*0.1, 190, 'rgba(255,255,255,0.25)', 60);
   blob(ctx, w*0.85, h*0.92, 230, 'rgba(255,255,255,0.18)', 70);
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.9, maxHeight:h*0.64, maxFont:120, minFont:42, lineHeightRatio:1.12});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:'#00E5FF', shadow:'rgba(150,40,20,0.35)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:accent('#00E5FF'), shadow:'rgba(150,40,20,0.35)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -445,7 +551,7 @@ function drawT2(ctx,w,h,title){ // Midnight neon dots
   }
   ctx.globalAlpha = 1;
   const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:104, minFont:40, lineHeightRatio:1.18});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', accentColor:'#FF6BCB', accentLastWordOnLastLine:true, numberColor:'#FFD93D'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', accentColor:'#FF6BCB', accentLastWordOnLastLine:true, numberColor:accent('#FFD93D')});
   drawWatermark(ctx,w,h);
 }
 
@@ -457,7 +563,7 @@ function drawT3(ctx,w,h,title){ // Pastel blobs
   blob(ctx, w*0.82, h*0.28, 180, 'rgba(178,255,214,0.55)', 75);
   blob(ctx, w*0.28, h*0.86, 230, 'rgba(200,180,255,0.5)', 85);
   const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:150, minFont:46, lineHeightRatio:1.04});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#4A2545', numberColor:'#FF3E7F'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#4A2545', numberColor:accent('#FF3E7F')});
   drawWatermark(ctx,w,h);
 }
 
@@ -469,7 +575,7 @@ function drawT4(ctx,w,h,title){ // Halftone duotone
   g2.addColorStop(1,'rgba(45,18,62,0.6)');
   ctx.fillStyle = g2; ctx.fillRect(0,0,w,h);
   const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:100, minFont:38, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#ffffff', accentColor:'#FFD93D', accentLastWordOnLastLine:true, numberColor:'#6BCB77'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#ffffff', accentColor:'#FFD93D', accentLastWordOnLastLine:true, numberColor:accent('#6BCB77')});
   drawWatermark(ctx,w,h);
 }
 
@@ -483,28 +589,18 @@ function drawT5(ctx,w,h,title){ // Bold color block split
   ctx.closePath();
   ctx.fill();
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'900', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.6, maxFont:106, minFont:40, lineHeightRatio:1.12});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.4, fontFamily:'Poppins', weight:'900', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:'#FFD93D'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.4, fontFamily:'Poppins', weight:'900', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:accent('#FFD93D')});
   drawWatermark(ctx,w,h);
 }
 
-function drawT6(ctx,w,h,title){ // Confetti scatter
-  ctx.fillStyle = '#FFF8F0'; ctx.fillRect(0,0,w,h);
-  const colors = ['#FF6B6B','#4D96FF','#FFD93D','#6BCB77','#FF6BCB','#845EC2'];
-  for(let i=0;i<75;i++){
-    const x = Math.random()*w, y = Math.random()*h;
-    const size = Math.random()*14+6;
-    ctx.fillStyle = colors[Math.floor(Math.random()*colors.length)];
-    const shape = Math.floor(Math.random()*3);
-    ctx.save();
-    ctx.translate(x,y);
-    ctx.rotate(Math.random()*Math.PI);
-    if(shape===0){ ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill(); }
-    else if(shape===1){ ctx.fillRect(-size/2,-size/2,size,size); }
-    else { ctx.beginPath(); ctx.moveTo(0,-size/2); ctx.lineTo(size/2,size/2); ctx.lineTo(-size/2,size/2); ctx.closePath(); ctx.fill(); }
-    ctx.restore();
-  }
-  const fit = fitTitle(ctx, title, {fontFamily:'Dancing Script', weight:'700', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:118, minFont:44, lineHeightRatio:1.22});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Dancing Script', weight:'700', color:'#3D2352', accentColor:'#FF6B6B', accentLastWordOnLastLine:true, numberColor:'#4D96FF'});
+function drawT6(ctx,w,h,title){ // Minimal solid editorial card (clean Pinterest quote-card look)
+  const palette = getPalette(0);
+  ctx.fillStyle = palette.bg; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(26,26,w-52,h-52);
+  const fit = fitTitle(ctx, title, {fontFamily:'DM Serif Display', weight:'400', maxWidth:w*0.8, maxHeight:h*0.62, maxFont:110, minFont:40, lineHeightRatio:1.22});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'DM Serif Display', weight:'400', color:palette.text, numberColor:accent('#E24F4F')});
   drawWatermark(ctx,w,h);
 }
 
@@ -515,24 +611,15 @@ function drawT7(ctx,w,h,title){ // Vibrant mesh gradient
   blob(ctx, w*0.78, h*0.14, 200, 'rgba(255,255,255,0.18)', 85);
   blob(ctx, w*0.2, h*0.82, 220, 'rgba(255,255,255,0.15)', 85);
   const fit = fitTitle(ctx, title, {fontFamily:'Lobster', weight:'400', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:96, minFont:34, lineHeightRatio:1.28});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:'#FFD93D'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:accent('#FFD93D')});
   drawWatermark(ctx,w,h);
 }
 
-function drawT8(ctx,w,h,title){ // Retro sunset stripes
-  const sky = ctx.createLinearGradient(0,0,0,h*0.55);
-  sky.addColorStop(0,'#2E1760'); sky.addColorStop(1,'#8E3B76');
-  ctx.fillStyle = sky; ctx.fillRect(0,0,w,h*0.55);
-  ctx.fillStyle = '#FFD93D';
-  ctx.beginPath(); ctx.arc(w/2, h*0.44, 140, 0, Math.PI*2); ctx.fill();
-  const stripeColors = ['#FF6B6B','#FF9A5B','#FFD93D','#FF6BCB'];
-  const stripeH = (h*0.45) / stripeColors.length;
-  stripeColors.forEach((c,i)=>{
-    ctx.fillStyle = c;
-    ctx.fillRect(0, h*0.55 + i*stripeH, w, stripeH + 2);
-  });
-  const fit = fitTitle(ctx, title, {fontFamily:'DM Serif Display', weight:'400', maxWidth:w*0.86, maxHeight:h*0.25, maxFont:82, minFont:32, lineHeightRatio:1.2});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.15, fontFamily:'DM Serif Display', weight:'400', color:'#FFF6E9', accentColor:'#FFD93D', accentLastWordOnLastLine:true, numberColor:'#FF3E7F'});
+function drawT8(ctx,w,h,title){ // Elegant italic statement card (soft solid background)
+  const palette = getPalette(3);
+  ctx.fillStyle = palette.bg; ctx.fillRect(0,0,w,h);
+  const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.86, maxHeight:h*0.6, maxFont:100, minFont:38, lineHeightRatio:1.24});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:palette.text, numberColor:accent('#FF3E7F')});
   drawWatermark(ctx,w,h);
 }
 
@@ -550,7 +637,7 @@ function drawT9(ctx,w,h,title){ // Polka dot card
   ctx.fill();
   ctx.restore();
   const fit = fitTitle(ctx, title, {fontFamily:'Caveat', weight:'700', maxWidth:cardW*0.88, maxHeight:cardH*0.82, maxFont:110, minFont:36, lineHeightRatio:1.14});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#FF3E7F', numberColor:'#4D96FF'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#FF3E7F', numberColor:accent('#4D96FF')});
   drawWatermark(ctx,w,h);
 }
 
@@ -575,7 +662,7 @@ function drawT10(ctx,w,h,title){ // Geometric triangles
     ctx.restore();
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:106, minFont:40, lineHeightRatio:1.15});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:'#FF3E7F', shadow:'rgba(0,0,0,0.3)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:accent('#FF3E7F'), shadow:'rgba(0,0,0,0.3)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -596,7 +683,7 @@ function drawT11(ctx,w,h,title){ // Layered waves
     ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.48, maxFont:98, minFont:38, lineHeightRatio:1.16});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.3, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.3)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.3, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:accent('#FFD93D'), shadow:'rgba(0,0,0,0.3)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -610,7 +697,7 @@ function drawT12(ctx,w,h,title){ // Duotone diagonal grain
     ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2);
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:145, minFont:46, lineHeightRatio:1.04});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#00E5FF'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:accent('#00E5FF')});
   drawWatermark(ctx,w,h);
 }
 
@@ -628,23 +715,17 @@ function drawT13(ctx,w,h,title){ // Grunge poster
     ctx.stroke();
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:118, minFont:42, lineHeightRatio:1.1});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#F5F0E6', numberColor:'#FF6B6B', shadow:'rgba(0,0,0,0.5)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#F5F0E6', numberColor:accent('#FF6B6B'), shadow:'rgba(0,0,0,0.5)'});
   drawWatermark(ctx,w,h);
 }
 
-function drawT14(ctx,w,h,title){ // Floral doodle scatter
+function drawT14(ctx,w,h,title){ // Bold two-tone gradient statement
+  const pair = getGradientPair(0);
   const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,'#FFF0F5'); g.addColorStop(1,'#EAF6EF');
+  g.addColorStop(0,pair[0]); g.addColorStop(1,pair[1]);
   ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  const doodleColors = ['#FF9FC7','#9AD9B5','#FFD37A','#B7A6E8'];
-  for(let i=0;i<18;i++){
-    const x = Math.random()*w, y = Math.random()*h;
-    const c = doodleColors[i%doodleColors.length];
-    if(i%2===0) drawDoodleHeart(ctx,x,y,Math.random()*30+20,c);
-    else drawDoodleFlower(ctx,x,y,Math.random()*30+20,c);
-  }
-  const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', maxWidth:w*0.86, maxHeight:h*0.6, maxFont:98, minFont:38, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', color:'#6C3483', numberColor:'#FF3E7F'});
+  const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.62, maxFont:118, minFont:42, lineHeightRatio:1.08});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#ffffff', numberColor:accent('#FFD93D'), shadow:'rgba(0,0,0,0.25)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -654,7 +735,7 @@ function drawT15(ctx,w,h,title){ // Bold typographic poster
   ctx.lineWidth = 10;
   ctx.strokeRect(30,30,w-60,h-60);
   const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.7, maxFont:170, minFont:50, lineHeightRatio:1.0});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.48, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#FFD93D'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.48, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:accent('#FFD93D')});
   drawWatermark(ctx,w,h);
 }
 
@@ -669,7 +750,7 @@ function drawStory(ctx,w,h,title){
   blob(ctx, w*0.85, h*0.86, 270, 'rgba(255,255,255,0.15)', 95);
 
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.86, maxHeight:h*0.44, maxFont:114, minFont:44, lineHeightRatio:1.18});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.42, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.25)', numberColor:'#FFD93D'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.42, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.25)', numberColor:accent('#FFD93D')});
 
   const ctaText = 'SWIPE UP';
   ctx.font = '700 40px "Poppins"';
@@ -719,6 +800,11 @@ const pinGrid = document.getElementById('pinGrid');
 const storyGrid = document.getElementById('storyGrid');
 const pinCount = document.getElementById('pinCount');
 const storyCount = document.getElementById('storyCount');
+const accentColorInput = document.getElementById('accentColor');
+const resetAccentBtn = document.getElementById('resetAccentBtn');
+const shuffleBtn = document.getElementById('shuffleBtn');
+const textSizeRange = document.getElementById('textSizeRange');
+const textSizeValue = document.getElementById('textSizeValue');
 
 let currentZip = null;
 let currentSlug = 'pinterest-pins';
@@ -831,6 +917,27 @@ generateBtn.addEventListener('click', generateAll);
 downloadZipBtn.addEventListener('click', downloadZip);
 titleInput.addEventListener('keydown', (e) => {
   if(e.key === 'Enter') generateAll();
+});
+
+accentColorInput.addEventListener('input', (e) => {
+  userAccentColor = e.target.value;
+});
+
+resetAccentBtn.addEventListener('click', () => {
+  userAccentColor = null;
+  accentColorInput.value = '#FF6B6B';
+  statusText.textContent = 'Accent colour reset ho gaya — designs apne original highlight colour mein banenge.';
+});
+
+shuffleBtn.addEventListener('click', () => {
+  paletteSeed = Math.floor(Math.random() * SOLID_PALETTES.length);
+  gradientSeed = Math.floor(Math.random() * GRADIENT_PAIRS.length);
+  statusText.textContent = 'Naya gradient/background theme select ho gaya — ab "Banao" dabaiye taaki naye designs bane.';
+});
+
+textSizeRange.addEventListener('input', (e) => {
+  fontScale = Number(e.target.value) / 100;
+  textSizeValue.textContent = e.target.value + '%';
 });
 </script>
 </body>
