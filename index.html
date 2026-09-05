@@ -2,558 +2,836 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<title>Fact Card Maker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Relationship Cues — Pinterest Pin Generator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800&family=Bebas+Neue&family=Playfair+Display:ital,wght@1,700&family=Dancing+Script:wght@700&family=Lobster&family=DM+Serif+Display&family=Caveat:wght@700&family=Anton&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    margin: 0; padding: 0;
-    background: #121212;
-    font-family: 'Inter', -apple-system, Roboto, 'Segoe UI', sans-serif;
-    color: #fff;
-    min-height: 100%;
+  :root{
+    --bg: #FFF3F0;
+    --panel: #FFFFFF;
+    --ink: #341C2E;
+    --muted: #8A6E82;
+    --coral: #FF6B6B;
+    --coral-dark: #E24F4F;
+    --pink: #FF6BCB;
+    --border: #F3DCD8;
+    --radius: 18px;
   }
-  .wrap {
-    display: flex;
-    flex-direction: column;
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 14px;
-    padding-bottom: 40px;
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Poppins', sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,107,107,0.10), transparent 45%),
+      radial-gradient(circle at 90% 20%, rgba(255,107,203,0.10), transparent 40%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100vh;
   }
-  h1 {
-    font-size: 18px;
-    text-align: center;
-    margin: 4px 0 14px;
-    font-weight: 600;
-    color: #eee;
+  header{
+    padding:36px 20px 18px;
+    text-align:center;
   }
-  .canvas-container {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    background: #000;
-    border-radius: 10px;
-    overflow: hidden;
-    touch-action: none;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  header .badge{
+    display:inline-block;
+    padding:6px 16px;
+    border-radius:999px;
+    background:#fff;
+    border:1px solid var(--border);
+    font-size:13px;
+    font-weight:600;
+    color:var(--coral-dark);
+    margin-bottom:14px;
   }
-  canvas#card {
-    width: 100%;
-    height: 100%;
-    display: block;
+  header h1{
+    font-size:clamp(24px,4vw,36px);
+    margin:0 0 8px;
+    font-weight:800;
   }
-  .placeholder-btn {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #888;
-    font-size: 14px;
-    pointer-events: none;
-    text-align: center;
-    padding: 0 20px;
+  header p{
+    color:var(--muted);
+    max-width:560px;
+    margin:0 auto;
+    font-size:15px;
+    line-height:1.5;
   }
-  .divider {
-    position: absolute;
-    left: 0; right: 0;
-    height: 32px;
-    margin-top: -16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: ns-resize;
-    z-index: 5;
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:10px 20px 60px;
   }
-  .divider .bar {
-    width: 50px;
-    height: 6px;
-    background: #4CAF50;
-    border-radius: 3px;
-    box-shadow: 0 0 0 3px rgba(0,0,0,0.35);
+  .composer{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:22px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+    box-shadow:0 10px 30px rgba(52,28,46,0.05);
   }
-  .controls {
-    margin-top: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+  .composer input[type="text"]{
+    flex:1 1 280px;
+    padding:14px 18px;
+    font-size:16px;
+    border-radius:12px;
+    border:1.5px solid var(--border);
+    font-family:'Poppins',sans-serif;
+    outline:none;
+    background:#FFFAF9;
   }
-  .row { display: flex; gap: 10px; }
-  button {
-    flex: 1;
-    background: #2b2b2b;
-    color: #fff;
-    border: 1px solid #3a3a3a;
-    border-radius: 10px;
-    padding: 14px 10px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
+  .composer input[type="text"]:focus{
+    border-color:var(--coral);
   }
-  button:active { background: #3a3a3a; }
-  button.primary { background: #4CAF50; border-color: #4CAF50; }
-  button.primary:active { background: #43a047; }
-  button.toggle.active { background: #29B6F6; border-color: #29B6F6; }
-  textarea, input[type=text] {
-    width: 100%;
-    background: #1c1c1c;
-    color: #fff;
-    border: 1px solid #3a3a3a;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 15px;
-    resize: none;
-    min-height: 80px;
-    font-family: 'Inter', sans-serif;
+  .btn{
+    padding:14px 24px;
+    border-radius:12px;
+    border:none;
+    font-family:'Poppins',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
   }
-  input[type=text] { min-height: unset; }
-  label.small {
-    font-size: 13px;
-    color: #aaa;
-    display: flex;
-    justify-content: space-between;
+  .btn-primary{
+    background:linear-gradient(135deg, var(--coral), var(--pink));
+    color:#fff;
+    box-shadow:0 8px 18px rgba(255,107,107,0.35);
   }
-  input[type=range] { width: 100%; }
-  .color-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .swatch {
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    border: 2px solid #555;
+  .btn-primary:hover{ transform:translateY(-1px); }
+  .btn-primary:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+    transform:none;
   }
-  .swatch.selected { border-color: #4CAF50; border-width: 3px; }
-  #fileInput { display: none; }
-  .hint {
-    font-size: 12px;
-    color: #777;
-    text-align: center;
-    margin-top: 6px;
+  .btn-secondary{
+    background:#fff;
+    border:1.5px solid var(--border);
+    color:var(--ink);
   }
-  .preview-sticky {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: #121212;
-    padding: 10px 0 8px;
-    margin: 0 -14px;
-    padding-left: 14px;
-    padding-right: 14px;
-    box-shadow: 0 8px 12px -6px rgba(0,0,0,0.5);
+  .btn-secondary:disabled{
+    opacity:.45;
+    cursor:not-allowed;
   }
-  .section-title {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #4FC3F7;
-    margin: 6px 0 2px;
-    padding-top: 14px;
-    border-top: 1px solid #2a2a2a;
+  .hint{
+    margin-top:10px;
+    font-size:13px;
+    color:var(--muted);
   }
-  .controls > .section-title:first-child { border-top: none; padding-top: 0; }
+  .status{
+    margin-top:14px;
+    font-size:14px;
+    color:var(--muted);
+    min-height:20px;
+  }
+  .section-title{
+    margin:40px 0 16px;
+    font-weight:700;
+    font-size:18px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .section-title .count{
+    font-size:12px;
+    background:var(--coral);
+    color:#fff;
+    padding:3px 10px;
+    border-radius:999px;
+    font-weight:700;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(190px,1fr));
+    gap:18px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 6px 18px rgba(52,28,46,0.06);
+  }
+  .card img{
+    width:100%;
+    display:block;
+    aspect-ratio:2/3;
+    object-fit:cover;
+    background:#f2eceb;
+  }
+  .card.story img{
+    aspect-ratio:9/16;
+  }
+  .card .meta{
+    padding:10px 12px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .card .meta span{
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+  }
+  .card .meta a{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--coral-dark);
+    text-decoration:none;
+    border:1.3px solid var(--border);
+    padding:6px 10px;
+    border-radius:8px;
+  }
+  .card .meta a:hover{
+    background:#FFF0EF;
+  }
+  .empty-note{
+    color:var(--muted);
+    font-size:14px;
+    text-align:center;
+    padding:30px 10px;
+    border:1.5px dashed var(--border);
+    border-radius:16px;
+  }
+  footer{
+    text-align:center;
+    color:var(--muted);
+    font-size:12.5px;
+    padding:20px;
+  }
+  .spinner{
+    width:16px;height:16px;
+    border-radius:50%;
+    border:2.5px solid rgba(255,255,255,0.5);
+    border-top-color:#fff;
+    display:inline-block;
+    vertical-align:-3px;
+    margin-right:8px;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
 </style>
 </head>
 <body>
+
+<header>
+  <div class="badge">Relationship Cues · Pin Studio</div>
+  <h1>Blog Title se 15 Pinterest Pins + 1 Story banaiye</h1>
+  <p>Neeche apna blogpost ka title likhiye — 15 alag-alag professional design ki Pinterest pin images aur ek Facebook Story image turant ban jayegi. Title mein agar koi number ho (jaise 5, 10, 21) to wo automatically bada aur alag color mein highlight ho jayega.</p>
+</header>
+
 <div class="wrap">
-  <h1>Fact Card Maker</h1>
-  <div class="preview-sticky">
-    <div class="canvas-container" id="canvasContainer">
-      <canvas id="card" width="1080" height="1080"></canvas>
-      <div class="placeholder-btn" id="placeholderHint">Neeche button se image select karein</div>
-      <div class="divider" id="divider"><div class="bar"></div></div>
-    </div>
+
+  <div class="composer">
+    <input id="titleInput" type="text" placeholder="Jaise: 5 Signs He's Really Falling For You" maxlength="120" />
+    <button id="generateBtn" class="btn btn-primary">✨ 15 Pins + Story Banao</button>
+    <button id="downloadZipBtn" class="btn btn-secondary" disabled>⬇ Sab ZIP mein Download</button>
+  </div>
+  <div class="hint">Tip: Title mein digit wala number (5, 10, 21...) daalenge to wo har design mein bada aur special color mein dikhega.</div>
+  <div class="status" id="statusText"></div>
+
+  <div class="section-title">Pinterest Pins <span class="count" id="pinCount">0 / 15</span></div>
+  <div class="grid" id="pinGrid">
+    <div class="empty-note">Title daal kar "Banao" dabaiye — yahan 15 designs preview honge.</div>
   </div>
 
-  <div class="controls">
-    <div class="section-title">1 · Image</div>
-    <div class="row">
-      <button id="pickImageBtn">📷 Image Select Karein</button>
-    </div>
-    <input type="file" id="fileInput" accept="image/*" />
-    <div class="hint">📌 Image par ungli rakh ke drag karein — position adjust karne ke liye</div>
-
-    <label class="small">Image Zoom / Crop <span id="zoomVal">100</span>%
-      <input type="range" id="zoom" min="100" max="300" value="100" />
-    </label>
-
-    <div class="section-title">2 · Format</div>
-    <div class="row">
-      <button id="squareBtn" class="toggle active">⬛ Square (1:1)</button>
-      <button id="portraitBtn" class="toggle">▯ Portrait (4:5)</button>
-    </div>
-
-    <div class="section-title">3 · Fact Text</div>
-    <textarea id="factText" placeholder="Yahan apna fact / text likhein...">TEXT_HERE</textarea>
-    <label class="small">Font Size <span id="fontSizeVal">44</span>px
-      <input type="range" id="fontSize" min="20" max="90" value="44" />
-    </label>
-    <label class="small">Text Area Background</label>
-    <div class="color-row" id="colorRow">
-      <div class="swatch selected" data-color="#000000" style="background:#000000"></div>
-      <div class="swatch" data-color="#12121f" style="background:#12121f"></div>
-      <div class="swatch" data-color="#0f2027" style="background:#0f2027"></div>
-      <div class="swatch" data-color="#1b1b2f" style="background:#1b1b2f"></div>
-      <div class="swatch" data-color="#20142e" style="background:#20142e"></div>
-    </div>
-
-    <div class="section-title">4 · Branding</div>
-    <label class="small">Category Badge (image ke top-left par dikhega)</label>
-    <input type="text" id="categoryTag" value="AI" placeholder="e.g. AI, SPACE, BIOLOGY" maxlength="16" />
-    <label class="small">Source (optional, card ke niche chhote text me)</label>
-    <input type="text" id="sourceText" placeholder="e.g. Source: Nature Journal" maxlength="60" />
-
-    <div class="section-title">5 · Export</div>
-    <div class="row">
-      <button id="saveBtn" class="primary">💾 Save Post</button>
-    </div>
-    <div class="hint">Save karne par image "Downloads" folder mein save hogi</div>
+  <div class="section-title">Facebook / Instagram Story <span class="count" id="storyCount">0 / 1</span></div>
+  <div class="grid" id="storyGrid" style="grid-template-columns:repeat(auto-fill, minmax(160px,1fr));">
   </div>
+
 </div>
 
+<footer>Sabhi images canvas se browser mein hi generate hoti hain — koi server ya API key nahi chahiye. GitHub Pages par free host ho sakta hai.</footer>
+
 <script>
-  const canvas = document.getElementById('card');
-  const ctx = canvas.getContext('2d');
-  const container = document.getElementById('canvasContainer');
-  const divider = document.getElementById('divider');
-  const placeholderHint = document.getElementById('placeholderHint');
-  const factText = document.getElementById('factText');
-  const categoryTag = document.getElementById('categoryTag');
-  const sourceText = document.getElementById('sourceText');
-  const fontSizeInput = document.getElementById('fontSize');
-  const fontSizeVal = document.getElementById('fontSizeVal');
-  const zoomInput = document.getElementById('zoom');
-  const zoomVal = document.getElementById('zoomVal');
-  const colorRow = document.getElementById('colorRow');
-  const fileInput = document.getElementById('fileInput');
-  const squareBtn = document.getElementById('squareBtn');
-  const portraitBtn = document.getElementById('portraitBtn');
+/* ---------------- CONFIG ---------------- */
+const PIN_W = 1000, PIN_H = 1500;
+const STORY_W = 1080, STORY_H = 1920;
+const WATERMARK_TEXT = "Relationship Cues";
 
-  // ---- Card dimensions: width is always 1080, height depends on chosen format ----
-  const CARD_W = 1080;
-  let CARD_H = 1080;
+/* ---------------- BASIC UTILITIES ---------------- */
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
 
-  let state = {
-    image: null,
-    splitRatio: 0.62,
-    fontSize: 44,
-    bgColor: '#000000',
-    text: factText.value,
-    category: categoryTag.value,
-    source: sourceText.value,
-    aspect: 'square',
-    zoom: 1,          // 1 = fully fit (no extra crop), higher = zoomed in / more cropped
-    centerX: null,    // center point of the crop window, in source-image pixels
-    centerY: null,
-    cropW: null,      // last computed crop window size (used by drag handler for scaling)
-    cropH: null
-  };
+function blob(ctx,x,y,radius,color,blurPx){
+  ctx.save();
+  ctx.filter = `blur(${blurPx}px)`;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x,y,radius,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
 
-  // ---- Fact text renders in a single, consistent color (no per-word highlighting) ----
-  const TEXT_COLOR = '#ffffff';
-
-  function buildTokens(text) {
-    return text.split(/\s+/).filter(Boolean).map((w) => ({ text: w, color: TEXT_COLOR }));
-  }
-
-  function wrapTokens(context, tokens, maxWidth) {
-    const spaceWidth = context.measureText(' ').width;
-    const lines = [];
-    let currentLine = [];
-    let currentWidth = 0;
-    tokens.forEach(tok => {
-      const w = context.measureText(tok.text).width;
-      const addWidth = currentLine.length ? spaceWidth + w : w;
-      if (currentWidth + addWidth > maxWidth && currentLine.length) {
-        lines.push(currentLine);
-        currentLine = [{ ...tok, width: w }];
-        currentWidth = w;
-      } else {
-        currentLine.push({ ...tok, width: w });
-        currentWidth += addWidth;
-      }
-    });
-    if (currentLine.length) lines.push(currentLine);
-    return lines;
-  }
-
-  function drawRoundedRect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  function drawCard() {
-    ctx.clearRect(0, 0, CARD_W, CARD_H);
-    const splitY = Math.round(CARD_H * state.splitRatio);
-
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, CARD_W, splitY);
-
-    if (state.image) {
-      const img = state.image;
-      const targetW = CARD_W, targetH = splitY;
-      const targetRatio = targetW / targetH;
-      const imgRatio = img.width / img.height;
-
-      // base "fit" crop size at zoom = 1 (covers the target box exactly, no extra crop)
-      let baseW, baseH;
-      if (imgRatio > targetRatio) { baseH = img.height; baseW = baseH * targetRatio; }
-      else { baseW = img.width; baseH = baseW / targetRatio; }
-
-      const cropW = baseW / state.zoom;
-      const cropH = baseH / state.zoom;
-
-      // clamp the center point so the crop window never goes outside the image
-      state.centerX = Math.max(cropW / 2, Math.min(state.centerX, img.width - cropW / 2));
-      state.centerY = Math.max(cropH / 2, Math.min(state.centerY, img.height - cropH / 2));
-
-      const cropX = state.centerX - cropW / 2;
-      const cropY = state.centerY - cropH / 2;
-
-      state.cropW = cropW;
-      state.cropH = cropH;
-
-      ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
-    }
-
-    // ---- Category badge: top-left pill on the image ----
-    const catLabel = (state.category || '').trim().toUpperCase();
-    if (catLabel) {
-      ctx.font = "700 26px 'Inter', sans-serif";
-      const padX = 18, padY = 10;
-      const textW = ctx.measureText(catLabel).width;
-      const badgeW = textW + padX * 2;
-      const badgeH = 26 + padY * 2;
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      drawRoundedRect(32, 32, badgeW, badgeH, badgeH / 2);
+function dotsPattern(ctx,w,h,color,spacing,radius,alpha){
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  for(let yy=spacing/2; yy<h; yy+=spacing){
+    for(let xx=spacing/2; xx<w; xx+=spacing){
+      ctx.beginPath();
+      ctx.arc(xx,yy,radius,0,Math.PI*2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-      ctx.lineWidth = 1.5;
-      drawRoundedRect(32, 32, badgeW, badgeH, badgeH / 2);
-      ctx.stroke();
-      ctx.fillStyle = '#4FC3F7';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(catLabel, 32 + padX, 32 + badgeH / 2 + 1);
     }
+  }
+  ctx.restore();
+}
 
-    // ---- Watermark: small brand mark + "Cortexly" wordmark, top-right of image ----
-    ctx.font = "700 32px 'Poppins', sans-serif";
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    const wmText = 'Cortexly';
-    const wmY = 52;
-    const wmTextW = ctx.measureText(wmText).width;
-    ctx.fillStyle = 'rgba(230,230,230,0.95)';
-    ctx.fillText(wmText, CARD_W - 40, wmY);
+function drawDoodleHeart(ctx,x,y,size,color){
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y+size*0.3);
+  ctx.bezierCurveTo(x-size/2,y-size/3, x-size,y+size/4, x, y+size*0.9);
+  ctx.bezierCurveTo(x+size,y+size/4, x+size/2,y-size/3, x, y+size*0.3);
+  ctx.stroke();
+}
+
+function drawDoodleFlower(ctx,x,y,size,color){
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.2;
+  for(let i=0;i<5;i++){
+    const angle = (Math.PI*2/5)*i;
     ctx.beginPath();
-    ctx.arc(CARD_W - 40 - wmTextW - 16, wmY, 7, 0, Math.PI * 2);
-    ctx.fillStyle = '#4FC3F7';
-    ctx.fill();
+    ctx.ellipse(x+Math.cos(angle)*size*0.35, y+Math.sin(angle)*size*0.35, size*0.28, size*0.16, angle, 0, Math.PI*2);
+    ctx.stroke();
+  }
+}
 
-    // ---- Soft gradient seam between image and text area (instead of a hard cut) ----
-    const seamHeight = 46;
-    const seamGrad = ctx.createLinearGradient(0, splitY - seamHeight, 0, splitY + seamHeight);
-    seamGrad.addColorStop(0, 'rgba(0,0,0,0)');
-    seamGrad.addColorStop(1, state.bgColor);
-    ctx.fillStyle = state.bgColor;
-    ctx.fillRect(0, splitY, CARD_W, CARD_H - splitY);
-    ctx.fillStyle = seamGrad;
-    ctx.fillRect(0, splitY - seamHeight, CARD_W, seamHeight * 2);
+/* ---------------- TITLE FITTING + NUMBER HIGHLIGHT ---------------- */
+/*
+  fitTitle(): word-by-word layout engine.
+  - Detects the first word containing a digit (5, 10, 21, 24/7, 21st...) and renders
+    it larger + bolder than the rest so it becomes the visual anchor of the pin.
+  - Wraps text into lines that respect the per-word (variable) sizes.
+*/
+function fitTitle(ctx, rawTitle, opts){
+  const title = opts.uppercase ? rawTitle.toUpperCase() : rawTitle;
+  const words = title.split(' ').filter(Boolean);
+  const numberIdx = words.findIndex(w => /\d/.test(w));
+  const numberScale = opts.numberScale || 1.55;
+  let baseSize = opts.maxFont;
+  let chosen = null;
 
-    const paddingX = 60;
-    const maxWidth = CARD_W - paddingX * 2;
-    ctx.font = `700 ${state.fontSize}px 'Poppins', sans-serif`;
+  while(baseSize >= opts.minFont){
+    const wordSizes = words.map((w,i) => i===numberIdx ? Math.round(baseSize*numberScale) : baseSize);
+    const wordWeights = words.map((w,i) => i===numberIdx ? '900' : (opts.weight || '700'));
+
+    ctx.font = `${opts.style || 'normal'} ${opts.weight || '700'} ${baseSize}px "${opts.fontFamily}"`;
+    const spaceWidth = ctx.measureText(' ').width;
+
+    const lines = [];
+    let cur = [];
+    let curWidth = 0;
+    for(let i=0;i<words.length;i++){
+      ctx.font = `${opts.style || 'normal'} ${wordWeights[i]} ${wordSizes[i]}px "${opts.fontFamily}"`;
+      const wWidth = ctx.measureText(words[i]).width;
+      const add = cur.length ? spaceWidth + wWidth : wWidth;
+      if(curWidth + add > opts.maxWidth && cur.length){
+        lines.push(cur);
+        cur = [i];
+        curWidth = wWidth;
+      } else {
+        cur.push(i);
+        curWidth += add;
+      }
+    }
+    if(cur.length) lines.push(cur);
+
+    const lineHeights = lines.map(line => Math.max(...line.map(i => wordSizes[i])) * (opts.lineHeightRatio || 1.15));
+    const totalHeight = lineHeights.reduce((a,b) => a+b, 0);
+
+    if(totalHeight <= opts.maxHeight || baseSize <= opts.minFont){
+      chosen = { baseSize, words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, numberIdx };
+      break;
+    }
+    baseSize -= 2;
+  }
+  return chosen;
+}
+
+function drawTitle(ctx, fit, cfg){
+  const { words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, numberIdx } = fit;
+  let y = cfg.centerY - totalHeight/2;
+  const accentLast = cfg.accentLastWordOnLastLine && numberIdx === -1;
+
+  lines.forEach((line, li) => {
+    const lh = lineHeights[li];
+    const yMid = y + lh/2;
+
+    let totalW = 0;
+    line.forEach((wi, idx) => {
+      ctx.font = `${cfg.style || 'normal'} ${wordWeights[wi]} ${wordSizes[wi]}px "${cfg.fontFamily}"`;
+      totalW += ctx.measureText(words[wi]).width;
+      if(idx>0) totalW += spaceWidth;
+    });
+
+    let x = cfg.centerX - totalW/2;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
-    const spaceWidth = ctx.measureText(' ').width;
-    const tokens = buildTokens(state.text || '');
-    const lines = wrapTokens(ctx, tokens, maxWidth);
-    const lineHeight = state.fontSize * 1.3;
-    const totalTextHeight = lines.length * lineHeight;
-    const textAreaCenterY = splitY + (CARD_H - splitY) / 2;
-    let startY = textAreaCenterY - totalTextHeight / 2 + lineHeight / 2;
+    line.forEach((wi, idx) => {
+      if(idx>0) x += spaceWidth;
+      const isNumber = wi === numberIdx;
+      const isLastOverall = accentLast && li===lines.length-1 && idx===line.length-1;
 
-    lines.forEach((line, i) => {
-      let x = paddingX;
-      const y = startY + i * lineHeight;
-      line.forEach(tok => {
-        ctx.fillStyle = tok.color;
-        ctx.fillText(tok.text, x, y);
-        x += tok.width + spaceWidth;
-      });
+      ctx.font = `${cfg.style || 'normal'} ${wordWeights[wi]} ${wordSizes[wi]}px "${cfg.fontFamily}"`;
+      if(cfg.shadow){ ctx.shadowColor = cfg.shadow; ctx.shadowBlur = 20; ctx.shadowOffsetY = 4; }
+      else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
+
+      ctx.fillStyle = isNumber ? (cfg.numberColor || cfg.accentColor || cfg.color)
+                     : (isLastOverall ? (cfg.accentColor || cfg.color) : cfg.color);
+      ctx.fillText(words[wi], x, yMid);
+      x += ctx.measureText(words[wi]).width;
     });
+    y += lh;
+  });
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+}
 
-    // ---- Optional source line, small text bottom-center of the text area ----
-    const src = (state.source || '').trim();
-    if (src) {
-      ctx.font = "500 22px 'Inter', sans-serif";
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(src, CARD_W / 2, CARD_H - 28);
+function drawWatermark(ctx, w, h){
+  const fontSize = 28;
+  ctx.font = `600 ${fontSize}px "Poppins"`;
+  const textWidth = ctx.measureText(WATERMARK_TEXT).width;
+  const padX = 26, padY = 13;
+  const boxW = textWidth + padX*2;
+  const boxH = fontSize + padY*2;
+  const x = (w - boxW)/2;
+  const y = h - boxH - 40;
+  ctx.fillStyle = 'rgba(0,0,0,0.42)';
+  roundRect(ctx, x, y, boxW, boxH, boxH/2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `600 ${fontSize}px "Poppins"`;
+  ctx.fillText(WATERMARK_TEXT, w/2, y + boxH/2 + 1);
+}
+
+/* ---------------- 15 PIN TEMPLATES ---------------- */
+
+function drawT1(ctx,w,h,title){ // Sunset gradient
+  const g = ctx.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,'#FF6B6B'); g.addColorStop(0.55,'#FF9A5B'); g.addColorStop(1,'#FFD93D');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  blob(ctx, w*0.15, h*0.1, 190, 'rgba(255,255,255,0.25)', 60);
+  blob(ctx, w*0.85, h*0.92, 230, 'rgba(255,255,255,0.18)', 70);
+  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.9, maxHeight:h*0.64, maxFont:120, minFont:42, lineHeightRatio:1.12});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:'#00E5FF', shadow:'rgba(150,40,20,0.35)'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT2(ctx,w,h,title){ // Midnight neon dots
+  ctx.fillStyle = '#14142E'; ctx.fillRect(0,0,w,h);
+  const neon = ['#FF6BCB','#4D96FF','#FFD93D','#6BCB77'];
+  for(let i=0;i<50;i++){
+    const x = Math.random()*w, y = Math.random()*h, r = Math.random()*3+1.2;
+    ctx.globalAlpha = 0.65;
+    ctx.fillStyle = neon[i % neon.length];
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:104, minFont:40, lineHeightRatio:1.18});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', accentColor:'#FF6BCB', accentLastWordOnLastLine:true, numberColor:'#FFD93D'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT3(ctx,w,h,title){ // Pastel blobs
+  const g = ctx.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,'#FFE9EF'); g.addColorStop(1,'#E7F5FF');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  blob(ctx, w*0.22, h*0.16, 210, 'rgba(255,196,140,0.5)', 75);
+  blob(ctx, w*0.82, h*0.28, 180, 'rgba(178,255,214,0.55)', 75);
+  blob(ctx, w*0.28, h*0.86, 230, 'rgba(200,180,255,0.5)', 85);
+  const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:150, minFont:46, lineHeightRatio:1.04});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#4A2545', numberColor:'#FF3E7F'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT4(ctx,w,h,title){ // Halftone duotone
+  ctx.fillStyle = '#6C3483'; ctx.fillRect(0,0,w,h);
+  dotsPattern(ctx,w,h,'#FF6BCB',44,5,0.35);
+  const g2 = ctx.createRadialGradient(w/2,h*0.4,40,w/2,h*0.4,w*0.85);
+  g2.addColorStop(0,'rgba(108,52,131,0)');
+  g2.addColorStop(1,'rgba(45,18,62,0.6)');
+  ctx.fillStyle = g2; ctx.fillRect(0,0,w,h);
+  const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:100, minFont:38, lineHeightRatio:1.24});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#ffffff', accentColor:'#FFD93D', accentLastWordOnLastLine:true, numberColor:'#6BCB77'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT5(ctx,w,h,title){ // Bold color block split
+  ctx.fillStyle = '#4D96FF'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = '#FF6B6B';
+  ctx.beginPath();
+  ctx.moveTo(0,h);
+  ctx.lineTo(w,h*0.4);
+  ctx.lineTo(w,h);
+  ctx.closePath();
+  ctx.fill();
+  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'900', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.6, maxFont:106, minFont:40, lineHeightRatio:1.12});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.4, fontFamily:'Poppins', weight:'900', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:'#FFD93D'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT6(ctx,w,h,title){ // Confetti scatter
+  ctx.fillStyle = '#FFF8F0'; ctx.fillRect(0,0,w,h);
+  const colors = ['#FF6B6B','#4D96FF','#FFD93D','#6BCB77','#FF6BCB','#845EC2'];
+  for(let i=0;i<75;i++){
+    const x = Math.random()*w, y = Math.random()*h;
+    const size = Math.random()*14+6;
+    ctx.fillStyle = colors[Math.floor(Math.random()*colors.length)];
+    const shape = Math.floor(Math.random()*3);
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(Math.random()*Math.PI);
+    if(shape===0){ ctx.beginPath(); ctx.arc(0,0,size/2,0,Math.PI*2); ctx.fill(); }
+    else if(shape===1){ ctx.fillRect(-size/2,-size/2,size,size); }
+    else { ctx.beginPath(); ctx.moveTo(0,-size/2); ctx.lineTo(size/2,size/2); ctx.lineTo(-size/2,size/2); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  }
+  const fit = fitTitle(ctx, title, {fontFamily:'Dancing Script', weight:'700', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:118, minFont:44, lineHeightRatio:1.22});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Dancing Script', weight:'700', color:'#3D2352', accentColor:'#FF6B6B', accentLastWordOnLastLine:true, numberColor:'#4D96FF'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT7(ctx,w,h,title){ // Vibrant mesh gradient
+  const g = ctx.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,'#4D96FF'); g.addColorStop(0.35,'#845EC2'); g.addColorStop(0.7,'#FF6BCB'); g.addColorStop(1,'#FF9A5B');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  blob(ctx, w*0.78, h*0.14, 200, 'rgba(255,255,255,0.18)', 85);
+  blob(ctx, w*0.2, h*0.82, 220, 'rgba(255,255,255,0.15)', 85);
+  const fit = fitTitle(ctx, title, {fontFamily:'Lobster', weight:'400', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:96, minFont:34, lineHeightRatio:1.28});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:'#FFD93D'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT8(ctx,w,h,title){ // Retro sunset stripes
+  const sky = ctx.createLinearGradient(0,0,0,h*0.55);
+  sky.addColorStop(0,'#2E1760'); sky.addColorStop(1,'#8E3B76');
+  ctx.fillStyle = sky; ctx.fillRect(0,0,w,h*0.55);
+  ctx.fillStyle = '#FFD93D';
+  ctx.beginPath(); ctx.arc(w/2, h*0.44, 140, 0, Math.PI*2); ctx.fill();
+  const stripeColors = ['#FF6B6B','#FF9A5B','#FFD93D','#FF6BCB'];
+  const stripeH = (h*0.45) / stripeColors.length;
+  stripeColors.forEach((c,i)=>{
+    ctx.fillStyle = c;
+    ctx.fillRect(0, h*0.55 + i*stripeH, w, stripeH + 2);
+  });
+  const fit = fitTitle(ctx, title, {fontFamily:'DM Serif Display', weight:'400', maxWidth:w*0.86, maxHeight:h*0.25, maxFont:82, minFont:32, lineHeightRatio:1.2});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.15, fontFamily:'DM Serif Display', weight:'400', color:'#FFF6E9', accentColor:'#FFD93D', accentLastWordOnLastLine:true, numberColor:'#FF3E7F'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT9(ctx,w,h,title){ // Polka dot card
+  ctx.fillStyle = '#FFF3B0'; ctx.fillRect(0,0,w,h);
+  dotsPattern(ctx,w,h,'#ffffff',50,6,0.7);
+  const cardW = w*0.86, cardH = h*0.48;
+  const cardX = (w-cardW)/2, cardY = h*0.29;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.15)';
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 10;
+  ctx.fillStyle = '#ffffff';
+  roundRect(ctx, cardX, cardY, cardW, cardH, 40);
+  ctx.fill();
+  ctx.restore();
+  const fit = fitTitle(ctx, title, {fontFamily:'Caveat', weight:'700', maxWidth:cardW*0.88, maxHeight:cardH*0.82, maxFont:110, minFont:36, lineHeightRatio:1.14});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#FF3E7F', numberColor:'#4D96FF'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT10(ctx,w,h,title){ // Geometric triangles
+  const g = ctx.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,'#0F6E5C'); g.addColorStop(1,'#0B4F73');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  const shapeAlpha = ['rgba(255,255,255,0.11)','rgba(255,255,255,0.06)','rgba(255,255,255,0.16)'];
+  for(let i=0;i<26;i++){
+    const size = Math.random()*160+60;
+    const x = Math.random()*w, y = Math.random()*h;
+    ctx.fillStyle = shapeAlpha[i%shapeAlpha.length];
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(Math.random()*Math.PI);
+    ctx.beginPath();
+    ctx.moveTo(0,-size/2);
+    ctx.lineTo(size/2, size/2);
+    ctx.lineTo(-size/2, size/2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:106, minFont:40, lineHeightRatio:1.15});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:'#FF3E7F', shadow:'rgba(0,0,0,0.3)'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT11(ctx,w,h,title){ // Layered waves
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#1C6E8C'); g.addColorStop(1,'#0B3D5C');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  const waveColors = ['rgba(255,255,255,0.12)','rgba(255,255,255,0.08)','rgba(255,255,255,0.16)'];
+  for(let wv=0; wv<3; wv++){
+    ctx.fillStyle = waveColors[wv%waveColors.length];
+    ctx.beginPath();
+    const baseY = h*0.62 + wv*95;
+    ctx.moveTo(0, baseY);
+    for(let x=0;x<=w;x+=50){
+      const y = baseY + Math.sin((x/w)*Math.PI*2 + wv) * 42;
+      ctx.lineTo(x,y);
     }
+    ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
+  }
+  const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.48, maxFont:98, minFont:38, lineHeightRatio:1.16});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.3, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.3)'});
+  drawWatermark(ctx,w,h);
+}
 
-    // ---- Thin frame around the whole card for a finished, designed look ----
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(3, 3, CARD_W - 6, CARD_H - 6);
+function drawT12(ctx,w,h,title){ // Duotone diagonal grain
+  ctx.fillStyle = '#FF3E7F'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = '#FF9A2E';
+  ctx.beginPath();
+  ctx.moveTo(0,0); ctx.lineTo(w,0); ctx.lineTo(0,h*0.7); ctx.closePath(); ctx.fill();
+  for(let i=0;i<300;i++){
+    ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.06})`;
+    ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2);
+  }
+  const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:145, minFont:46, lineHeightRatio:1.04});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#00E5FF'});
+  drawWatermark(ctx,w,h);
+}
 
-    const displayRatio = container.clientHeight / CARD_H;
-    divider.style.top = (splitY * displayRatio) + 'px';
-    placeholderHint.style.display = state.image ? 'none' : 'flex';
-    placeholderHint.style.height = (splitY * displayRatio) + 'px';
+function drawT13(ctx,w,h,title){ // Grunge poster
+  ctx.fillStyle = '#211D1D'; ctx.fillRect(0,0,w,h);
+  const vg = ctx.createRadialGradient(w/2,h/2,w*0.2,w/2,h/2,w*0.8);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)');
+  ctx.fillStyle = vg; ctx.fillRect(0,0,w,h);
+  for(let i=0;i<150;i++){
+    ctx.strokeStyle = `rgba(255,255,255,${Math.random()*0.05})`;
+    ctx.beginPath();
+    const x = Math.random()*w;
+    ctx.moveTo(x, Math.random()*h);
+    ctx.lineTo(x + (Math.random()*40-20), Math.random()*h);
+    ctx.stroke();
+  }
+  const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:118, minFont:42, lineHeightRatio:1.1});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#F5F0E6', numberColor:'#FF6B6B', shadow:'rgba(0,0,0,0.5)'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT14(ctx,w,h,title){ // Floral doodle scatter
+  const g = ctx.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,'#FFF0F5'); g.addColorStop(1,'#EAF6EF');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  const doodleColors = ['#FF9FC7','#9AD9B5','#FFD37A','#B7A6E8'];
+  for(let i=0;i<18;i++){
+    const x = Math.random()*w, y = Math.random()*h;
+    const c = doodleColors[i%doodleColors.length];
+    if(i%2===0) drawDoodleHeart(ctx,x,y,Math.random()*30+20,c);
+    else drawDoodleFlower(ctx,x,y,Math.random()*30+20,c);
+  }
+  const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', maxWidth:w*0.86, maxHeight:h*0.6, maxFont:98, minFont:38, lineHeightRatio:1.24});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', color:'#6C3483', numberColor:'#FF3E7F'});
+  drawWatermark(ctx,w,h);
+}
+
+function drawT15(ctx,w,h,title){ // Bold typographic poster
+  ctx.fillStyle = '#7C2AE8'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(30,30,w-60,h-60);
+  const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.7, maxFont:170, minFont:50, lineHeightRatio:1.0});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.48, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#FFD93D'});
+  drawWatermark(ctx,w,h);
+}
+
+const PIN_TEMPLATES = [drawT1, drawT2, drawT3, drawT4, drawT5, drawT6, drawT7, drawT8, drawT9, drawT10, drawT11, drawT12, drawT13, drawT14, drawT15];
+
+/* ---------------- FACEBOOK STORY TEMPLATE (no watermark) ---------------- */
+function drawStory(ctx,w,h,title){
+  const g = ctx.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,'#845EC2'); g.addColorStop(0.5,'#FF6BCB'); g.addColorStop(1,'#FF9A5B');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  blob(ctx, w*0.2, h*0.14, 230, 'rgba(255,255,255,0.18)', 95);
+  blob(ctx, w*0.85, h*0.86, 270, 'rgba(255,255,255,0.15)', 95);
+
+  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.86, maxHeight:h*0.44, maxFont:114, minFont:44, lineHeightRatio:1.18});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.42, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.25)', numberColor:'#FFD93D'});
+
+  const ctaText = 'SWIPE UP';
+  ctx.font = '700 40px "Poppins"';
+  const ctaWidth = ctx.measureText('▲   ' + ctaText).width;
+  const pillW = ctaWidth + 90, pillH = 92;
+  const pillX = (w - pillW)/2, pillY = h - 260;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.2)';
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 6;
+  ctx.fillStyle = '#ffffff';
+  roundRect(ctx, pillX, pillY, pillW, pillH, pillH/2);
+  ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#FF3E7F';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 40px "Poppins"';
+  ctx.fillText('▲   ' + ctaText, w/2, pillY + pillH/2 + 3);
+}
+
+/* ---------------- FONT LOADING ---------------- */
+async function loadFonts(){
+  const specs = [
+    '400 16px Poppins','600 16px Poppins','700 16px Poppins','800 16px Poppins','900 16px Poppins',
+    '700 16px Montserrat','800 16px Montserrat',
+    '400 16px "Bebas Neue"',
+    'italic 700 16px "Playfair Display"','700 16px "Playfair Display"',
+    '700 16px "Dancing Script"',
+    '400 16px Lobster',
+    '400 16px "DM Serif Display"',
+    '700 16px Caveat',
+    '400 16px Anton'
+  ];
+  try{
+    await Promise.all(specs.map(f => document.fonts.load(f)));
+    await document.fonts.ready;
+  }catch(e){ /* fonts best-effort; continue anyway */ }
+}
+
+/* ---------------- APP LOGIC ---------------- */
+const titleInput = document.getElementById('titleInput');
+const generateBtn = document.getElementById('generateBtn');
+const downloadZipBtn = document.getElementById('downloadZipBtn');
+const statusText = document.getElementById('statusText');
+const pinGrid = document.getElementById('pinGrid');
+const storyGrid = document.getElementById('storyGrid');
+const pinCount = document.getElementById('pinCount');
+const storyCount = document.getElementById('storyCount');
+
+let currentZip = null;
+let currentSlug = 'pinterest-pins';
+
+function slugify(str){
+  return str.toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g,'')
+    .replace(/\s+/g,'-')
+    .slice(0,40) || 'pin';
+}
+
+function addCard(container, dataUrl, label, filename, isStory){
+  const card = document.createElement('div');
+  card.className = 'card' + (isStory ? ' story' : '');
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.alt = label;
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  const span = document.createElement('span');
+  span.textContent = label;
+  const a = document.createElement('a');
+  a.textContent = 'Save';
+  a.href = dataUrl;
+  a.download = filename;
+  meta.appendChild(span);
+  meta.appendChild(a);
+  card.appendChild(img);
+  card.appendChild(meta);
+  container.appendChild(card);
+}
+
+function setLoading(isLoading){
+  generateBtn.disabled = isLoading;
+  generateBtn.innerHTML = isLoading ? '<span class="spinner"></span>Generate ho raha hai…' : `✨ ${PIN_TEMPLATES.length} Pins + Story Banao`;
+}
+
+async function generateAll(){
+  const title = titleInput.value.trim();
+  if(!title){
+    statusText.textContent = 'Pehle apna blogpost ka title likhiye.';
+    titleInput.focus();
+    return;
   }
 
-  let dragging = false;
-  function ratioFromClientY(clientY) {
-    const rect = container.getBoundingClientRect();
-    let ratio = (clientY - rect.top) / rect.height;
-    return Math.max(0.2, Math.min(0.85, ratio));
+  setLoading(true);
+  statusText.textContent = 'Fonts load ho rahe hain…';
+  pinGrid.innerHTML = '';
+  storyGrid.innerHTML = '';
+  pinCount.textContent = `0 / ${PIN_TEMPLATES.length}`;
+  storyCount.textContent = '0 / 1';
+  downloadZipBtn.disabled = true;
+
+  await loadFonts();
+
+  const zip = new JSZip();
+  const pinsFolder = zip.folder('pinterest-pins');
+  currentSlug = slugify(title);
+
+  for(let i=0;i<PIN_TEMPLATES.length;i++){
+    statusText.textContent = `Pin design ${i+1} / ${PIN_TEMPLATES.length} ban raha hai…`;
+    const canvas = document.createElement('canvas');
+    canvas.width = PIN_W; canvas.height = PIN_H;
+    const ctx = canvas.getContext('2d');
+    PIN_TEMPLATES[i](ctx, PIN_W, PIN_H, title);
+    const dataUrl = canvas.toDataURL('image/png');
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const filename = `pin-design-${i+1}.png`;
+    pinsFolder.file(filename, blob);
+    addCard(pinGrid, dataUrl, `Design ${i+1}`, filename, false);
+    pinCount.textContent = `${i+1} / ${PIN_TEMPLATES.length}`;
+    await new Promise(r => setTimeout(r, 0)); // let UI paint
   }
-  divider.addEventListener('pointerdown', (e) => {
-    dragging = true;
-    divider.setPointerCapture(e.pointerId);
-  });
-  divider.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    state.splitRatio = ratioFromClientY(e.clientY);
-    drawCard();
-  });
-  divider.addEventListener('pointerup', () => { dragging = false; });
-  divider.addEventListener('pointercancel', () => { dragging = false; });
 
-  // ---- Move/reposition the image by dragging it ----
-  let imgDragging = false;
-  let lastX = 0, lastY = 0;
+  statusText.textContent = 'Facebook Story image ban rahi hai…';
+  const storyCanvas = document.createElement('canvas');
+  storyCanvas.width = STORY_W; storyCanvas.height = STORY_H;
+  const sctx = storyCanvas.getContext('2d');
+  drawStory(sctx, STORY_W, STORY_H, title);
+  const storyDataUrl = storyCanvas.toDataURL('image/png');
+  const storyBlob = await new Promise(res => storyCanvas.toBlob(res, 'image/png'));
+  zip.folder('facebook-story').file('facebook-story.png', storyBlob);
+  addCard(storyGrid, storyDataUrl, 'Facebook Story', 'facebook-story.png', true);
+  storyCount.textContent = '1 / 1';
 
-  canvas.addEventListener('pointerdown', (e) => {
-    if (!state.image) return;
-    const rect = container.getBoundingClientRect();
-    const splitYDisplay = rect.top + rect.height * state.splitRatio;
-    if (e.clientY >= splitYDisplay) return; // only drag within the image area, not the text area
-    imgDragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    canvas.setPointerCapture(e.pointerId);
-  });
+  currentZip = zip;
+  downloadZipBtn.disabled = false;
+  statusText.textContent = 'Ho gaya! Ab "Sab ZIP mein Download" dabaiye ya har image individually save kariye.';
+  setLoading(false);
+}
 
-  canvas.addEventListener('pointermove', (e) => {
-    if (!imgDragging || !state.image) return;
-    const rect = container.getBoundingClientRect();
-    const dxDisplay = e.clientX - lastX;
-    const dyDisplay = e.clientY - lastY;
-    lastX = e.clientX;
-    lastY = e.clientY;
+async function downloadZip(){
+  if(!currentZip) return;
+  downloadZipBtn.disabled = true;
+  downloadZipBtn.textContent = 'ZIP taiyaar ho raha hai…';
+  const blob = await currentZip.generateAsync({type:'blob'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${currentSlug}-images.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  downloadZipBtn.disabled = false;
+  downloadZipBtn.textContent = '⬇ Sab ZIP mein Download';
+}
 
-    // convert display-pixel movement to source-image-pixel movement
-    const displayImageHeight = rect.height * state.splitRatio;
-    const scaleFactorX = state.cropW / rect.width;
-    const scaleFactorY = state.cropH / displayImageHeight;
-
-    state.centerX -= dxDisplay * scaleFactorX;
-    state.centerY -= dyDisplay * scaleFactorY;
-
-    drawCard();
-  });
-
-  canvas.addEventListener('pointerup', (e) => {
-    imgDragging = false;
-    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
-  });
-  canvas.addEventListener('pointercancel', () => { imgDragging = false; });
-
-  document.getElementById('pickImageBtn').addEventListener('click', () => {
-    fileInput.click();
-  });
-
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        state.image = img;
-        state.zoom = 1;
-        state.centerX = img.width / 2;
-        state.centerY = img.height / 2;
-        zoomInput.value = 100;
-        zoomVal.textContent = 100;
-        drawCard();
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  factText.addEventListener('input', () => { state.text = factText.value; drawCard(); });
-  categoryTag.addEventListener('input', () => { state.category = categoryTag.value; drawCard(); });
-  sourceText.addEventListener('input', () => { state.source = sourceText.value; drawCard(); });
-
-  fontSizeInput.addEventListener('input', () => {
-    state.fontSize = parseInt(fontSizeInput.value, 10);
-    fontSizeVal.textContent = state.fontSize;
-    drawCard();
-  });
-  zoomInput.addEventListener('input', () => {
-    state.zoom = parseInt(zoomInput.value, 10) / 100;
-    zoomVal.textContent = zoomInput.value;
-    drawCard();
-  });
-  colorRow.addEventListener('click', (e) => {
-    const sw = e.target.closest('.swatch');
-    if (!sw) return;
-    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
-    sw.classList.add('selected');
-    state.bgColor = sw.dataset.color;
-    drawCard();
-  });
-
-  function setAspect(mode) {
-    state.aspect = mode;
-    CARD_H = mode === 'square' ? 1080 : 1350; // 4:5 portrait for feed reach
-    canvas.width = CARD_W;
-    canvas.height = CARD_H;
-    container.style.aspectRatio = mode === 'square' ? '1 / 1' : '4 / 5';
-    squareBtn.classList.toggle('active', mode === 'square');
-    portraitBtn.classList.toggle('active', mode === 'portrait');
-    drawCard();
-  }
-  squareBtn.addEventListener('click', () => setAspect('square'));
-  portraitBtn.addEventListener('click', () => setAspect('portrait'));
-
-  document.getElementById('saveBtn').addEventListener('click', () => {
-    canvas.toBlob((blob) => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'FactCard_' + Date.now() + '.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
-    }, 'image/png');
-  });
-
-  window.addEventListener('resize', drawCard);
-  window.addEventListener('load', drawCard);
-  // Redraw once the Poppins/Inter webfonts finish loading so the card text
-  // doesn't briefly render in the fallback system font.
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(drawCard);
-  }
-  drawCard();
+generateBtn.addEventListener('click', generateAll);
+downloadZipBtn.addEventListener('click', downloadZip);
+titleInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') generateAll();
+});
 </script>
 </body>
 </html>
