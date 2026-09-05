@@ -774,6 +774,7 @@ function fitTitleFullBleed(ctx, rawTitle, opts){
   const seedSize = 90;
   ctx.font = `${style} ${weight} ${seedSize}px "${fontFamily}"`;
   const spaceWidth = ctx.measureText(' ').width;
+  const spaceWidthRatio = spaceWidth / seedSize; // declared up-front — used below AND at return
   const lines = [];
   let cur = [];
   let curWidth = 0;
@@ -863,7 +864,7 @@ function fitTitleFullBleed(ctx, rawTitle, opts){
     totalHeight += parenLineHeight;
   }
 
-  return { lineData, totalHeight, lineHeightRatio, spaceWidthRatio: spaceWidth/seedSize, parenText, parenFontSize, parenLineHeight };
+  return { lineData, totalHeight, lineHeightRatio, spaceWidthRatio, parenText, parenFontSize, parenLineHeight };
 }
 
 function drawTitleFullBleed(ctx, fit, cfg){
