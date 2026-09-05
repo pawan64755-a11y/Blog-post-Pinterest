@@ -317,6 +317,17 @@
 
 <div class="wrap">
 
+  <div class="section-title" style="margin-top:4px;">Live Preview</div>
+  <div class="hint" style="margin:-6px 0 12px;">Title/colour/keyword/text-size change karte hi ye turant update hota hai — pura set banane se pehle look confirm kar lijiye.</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:20px;">
+    <canvas id="previewCanvas" width="1000" height="1500" style="width:130px;height:195px;border-radius:12px;box-shadow:0 10px 26px rgba(52,28,46,0.18);border:1px solid var(--border);background:#fff;"></canvas>
+    <div class="tool-item">
+      <label for="textSizeSlider">🔠 Text Size</label>
+      <input id="textSizeSlider" type="range" min="60" max="150" step="5" value="100" />
+      <span class="value-pill" id="textSizeValue">100%</span>
+    </div>
+  </div>
+
   <div class="focus-box">
     <label for="focusKeywordInput">🎯 Focus Keyword</label>
     <input id="focusKeywordInput" type="text" placeholder="Jaise: Long Distance (title ka jo word/phrase yahan likhoge wo highlight ho jayega)" maxlength="60" />
@@ -329,12 +340,6 @@
     <input id="titleInput" type="text" placeholder="Jaise: 5 Signs He's Really Falling For You" maxlength="120" />
     <button id="generateBtn" class="btn btn-primary">✨ 56 Pins + Story Banao</button>
     <button id="downloadZipBtn" class="btn btn-secondary" disabled>⬇ Sab ZIP mein Download</button>
-  </div>
-
-  <div class="section-title" style="margin-top:4px;">Live Preview</div>
-  <div class="hint" style="margin:-6px 0 12px;">Title/colour/keyword change karte hi ye turant update hota hai — pura set banane se pehle look confirm kar lijiye.</div>
-  <div style="display:flex;justify-content:center;margin-bottom:20px;">
-    <canvas id="previewCanvas" width="1000" height="1500" style="width:210px;height:315px;border-radius:16px;box-shadow:0 12px 34px rgba(52,28,46,0.18);border:1px solid var(--border);background:#fff;"></canvas>
   </div>
 
   <div class="status" id="statusText"></div>
@@ -366,7 +371,7 @@ let focusKeyword = '';        // set by the Focus Keyword box; matching word(s) 
 const subtitleText = '';        // Subtitle/CTA feature removed — always empty, so drawSubtitle() never fires
 const badgeText = '';           // Category Badge feature removed — always empty, so drawBadge() never fires
 const pinFormat = 'standard';   // Format switcher removed — always Pinterest Standard (2:3)
-const fontScale = 1;            // Text Size slider removed — always 100%
+let fontScale = 1;              // driven by the Text Size slider (60% – 150%)
 const paletteSeed = 0;        // fixed index — drives the solid-card templates
 const gradientSeed = 0;       // fixed index — drives the two-tone gradient templates
 
@@ -1546,6 +1551,8 @@ const storyCount = document.getElementById('storyCount');
 const focusKeywordInput = document.getElementById('focusKeywordInput');
 const resetFocusBtn = document.getElementById('resetFocusBtn');
 const previewCanvas = document.getElementById('previewCanvas');
+const textSizeSlider = document.getElementById('textSizeSlider');
+const textSizeValue = document.getElementById('textSizeValue');
 
 let currentZip = null;
 let currentSlug = 'pinterest-pins';
@@ -1697,6 +1704,12 @@ resetFocusBtn.addEventListener('click', () => {
 });
 
 titleInput.addEventListener('input', () => {
+  schedulePreview();
+});
+
+textSizeSlider.addEventListener('input', (e) => {
+  fontScale = Number(e.target.value) / 100;
+  textSizeValue.textContent = `${e.target.value}%`;
   schedulePreview();
 });
 
