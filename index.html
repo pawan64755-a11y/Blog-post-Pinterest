@@ -272,8 +272,8 @@
 
 <header>
   <div class="badge">Relationship Cues · Pin Studio</div>
-  <h1>Blog Title se 25 Pinterest Pins + 1 Story banaiye</h1>
-  <p>Neeche apna blogpost ka title likhiye — 25 alag-alag professional design ki Pinterest pin images aur ek Facebook Story image turant ban jayegi. Title mein agar koi number ho (jaise 5, 10, 21) to wo automatically bada aur alag color mein highlight ho jayega.</p>
+  <h1>Blog Title se 56 Pinterest Pins + 1 Story banaiye</h1>
+  <p>Neeche apna blogpost ka title likhiye — 56 alag-alag professional design ki Pinterest pin images aur ek Facebook Story image turant ban jayegi. Title mein agar koi number ho (jaise 5, 10, 21) to wo automatically bada aur alag color mein highlight ho jayega.</p>
 </header>
 
 <div class="wrap">
@@ -294,15 +294,15 @@
 
   <div class="composer">
     <input id="titleInput" type="text" placeholder="Jaise: 5 Signs He's Really Falling For You" maxlength="120" />
-    <button id="generateBtn" class="btn btn-primary">✨ 25 Pins + Story Banao</button>
+    <button id="generateBtn" class="btn btn-primary">✨ 56 Pins + Story Banao</button>
     <button id="downloadZipBtn" class="btn btn-secondary" disabled>⬇ Sab ZIP mein Download</button>
   </div>
   <div class="hint">Tip: Title mein digit wala number (5, 10, 21...) daalenge to wo har design mein bada aur special color mein dikhega.</div>
   <div class="status" id="statusText"></div>
 
-  <div class="section-title">Pinterest Pins <span class="count" id="pinCount">0 / 25</span></div>
+  <div class="section-title">Pinterest Pins <span class="count" id="pinCount">0 / 56</span></div>
   <div class="grid" id="pinGrid">
-    <div class="empty-note">Title daal kar "Banao" dabaiye — yahan 25 designs preview honge.</div>
+    <div class="empty-note">Title daal kar "Banao" dabaiye — yahan 56 designs preview honge.</div>
   </div>
 
   <div class="section-title">Facebook / Instagram Story <span class="count" id="storyCount">0 / 1</span></div>
@@ -372,6 +372,12 @@ function getGradientPair(offset){
 }
 
 /* ---------------- BASIC UTILITIES ---------------- */
+function hexA(hex, alpha){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function roundRect(ctx,x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y);
@@ -898,7 +904,83 @@ function drawT25(ctx,w,h,title){ // Charcoal → Champagne Gold, minimal luxe ed
   drawWatermark(ctx,w,h);
 }
 
+/* ---------------- 31 SIMPLE UNIQUE-COLOUR SOLID BACKGROUND DESIGNS (T26–T56) ---------------- */
+/* Each design uses one flat, unique background colour + its own font pairing.
+   A small rotating set of simple layout accents (frame / bar / corner glow / dots / dividers / underline)
+   keeps all 31 visually distinct even though the background is a single solid colour. */
+
+const SIMPLE_DESIGNS = [
+  {bg:'#F4A261', text:'#2B1B0E', accent:'#E76F51', font:'Poppins',           weight:'800'},
+  {bg:'#2E8B57', text:'#F4FFF8', accent:'#FFD93D', font:'Montserrat',       weight:'800'},
+  {bg:'#6FB8E0', text:'#0B2E4A', accent:'#FF6B6B', font:'DM Serif Display', weight:'400'},
+  {bg:'#7A1F2B', text:'#FDEDE7', accent:'#FFD93D', font:'Playfair Display', weight:'700', style:'italic'},
+  {bg:'#D9A441', text:'#2E2205', accent:'#1F6F6F', font:'Bebas Neue',       weight:'400', uppercase:true},
+  {bg:'#F2C6C2', text:'#5C1F3E', accent:'#7A1F2B', font:'Caveat',           weight:'700'},
+  {bg:'#4B5563', text:'#F5F5F5', accent:'#FF9A5B', font:'Poppins',         weight:'700'},
+  {bg:'#FCD5B5', text:'#7A3E1D', accent:'#2E8B57', font:'Lobster',        weight:'400'},
+  {bg:'#0F4C4C', text:'#EAFBF7', accent:'#FFD93D', font:'Montserrat',      weight:'800'},
+  {bg:'#C9B6E4', text:'#3B2560', accent:'#FF6BCB', font:'Dancing Script',  weight:'700'},
+  {bg:'#E63946', text:'#FFF3F0', accent:'#FFD93D', font:'Anton',          weight:'400', uppercase:true},
+  {bg:'#E8D7B0', text:'#3A2E10', accent:'#A64B2A', font:'DM Serif Display',weight:'400'},
+  {bg:'#3730A3', text:'#EAE9FF', accent:'#FFD93D', font:'Montserrat',      weight:'800'},
+  {bg:'#A8E6CF', text:'#14432A', accent:'#FF6B6B', font:'Poppins',        weight:'700'},
+  {bg:'#5C1A1A', text:'#FDEAE7', accent:'#F4A261', font:'Playfair Display',weight:'700', style:'italic'},
+  {bg:'#17A6A0', text:'#05261F', accent:'#FFD93D', font:'Bebas Neue',      weight:'400', uppercase:true},
+  {bg:'#C97C7C', text:'#3B1414', accent:'#F4E3B2', font:'Caveat',          weight:'700'},
+  {bg:'#1E293B', text:'#F1F5F9', accent:'#F4A261', font:'Montserrat',      weight:'800'},
+  {bg:'#F2C14E', text:'#3A2E05', accent:'#7A1F2B', font:'Anton',          weight:'400', uppercase:true},
+  {bg:'#9CAF88', text:'#1E2A15', accent:'#FF6BCB', font:'DM Serif Display',weight:'400'},
+  {bg:'#6B2D5C', text:'#FBE9F3', accent:'#FFD93D', font:'Playfair Display',weight:'700', style:'italic'},
+  {bg:'#C7F0DB', text:'#0F3D2E', accent:'#E63946', font:'Poppins',        weight:'800'},
+  {bg:'#B4432D', text:'#FFF3E6', accent:'#F4E3B2', font:'Bebas Neue',      weight:'400', uppercase:true},
+  {bg:'#7B8FE0', text:'#1B1E4A', accent:'#FFD93D', font:'Montserrat',      weight:'800'},
+  {bg:'#5C4A2E', text:'#F5EFE0', accent:'#E76F51', font:'DM Serif Display',weight:'400'},
+  {bg:'#D6448C', text:'#FFF3F8', accent:'#2E2205', font:'Lobster',        weight:'400'},
+  {bg:'#35618F', text:'#EAF3FB', accent:'#FFD93D', font:'Poppins',        weight:'700'},
+  {bg:'#F5EBDD', text:'#4A2E1D', accent:'#7A1F2B', font:'Caveat',          weight:'700'},
+  {bg:'#4B2E83', text:'#F0E9FF', accent:'#FFD93D', font:'Anton',          weight:'400', uppercase:true},
+  {bg:'#3B4A2E', text:'#EAF3DA', accent:'#F4A261', font:'Playfair Display',weight:'700', style:'italic'},
+  {bg:'#D8A7A0', text:'#3B1F1A', accent:'#1F6F6F', font:'DM Serif Display',weight:'400'}
+];
+
+function drawSimpleSolid(ctx,w,h,title,design,variant){
+  ctx.fillStyle = design.bg; ctx.fillRect(0,0,w,h);
+  switch(variant){
+    case 0: // thin inset frame
+      ctx.strokeStyle = hexA(design.text,0.2); ctx.lineWidth = 5;
+      ctx.strokeRect(30,30,w-60,h-60);
+      break;
+    case 1: // small top accent bar
+      ctx.fillStyle = design.accent; ctx.fillRect(w/2-60, h*0.16, 120, 10);
+      break;
+    case 2: // soft corner glow
+      blob(ctx, w*0.88, h*0.1, 150, hexA(design.accent,0.35), 65);
+      break;
+    case 3: // bottom colour strip
+      ctx.fillStyle = design.accent; ctx.fillRect(0, h*0.88, w, h*0.12);
+      break;
+    case 4: // faint corner dot grid
+      dotsPattern(ctx, w, h*0.3, design.accent, 42, 3, 0.22);
+      break;
+    case 5: // twin divider lines
+      ctx.strokeStyle = hexA(design.text,0.45); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(w*0.32,h*0.26); ctx.lineTo(w*0.68,h*0.26); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w*0.32,h*0.66); ctx.lineTo(w*0.68,h*0.66); ctx.stroke();
+      break;
+    case 6: // underline accent below title
+      ctx.fillStyle = design.accent; ctx.fillRect(w/2-70, h*0.63, 140, 8);
+      break;
+  }
+  const fit = fitTitle(ctx, title, {fontFamily:design.font, weight:design.weight, style:design.style, uppercase:design.uppercase||false, maxWidth:w*0.84, maxHeight:h*0.6, maxFont:100, minFont:38, lineHeightRatio:design.style==='italic'?1.24:1.18});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:design.font, weight:design.weight, style:design.style, color:design.text, numberColor:accent(design.accent)});
+  drawWatermark(ctx,w,h);
+}
+
 const PIN_TEMPLATES = [drawT1, drawT2, drawT3, drawT4, drawT5, drawT6, drawT7, drawT8, drawT9, drawT10, drawT11, drawT12, drawT13, drawT14, drawT15, drawT16, drawT17, drawT18, drawT19, drawT20, drawT21, drawT22, drawT23, drawT24, drawT25];
+
+for(let i=0;i<SIMPLE_DESIGNS.length;i++){
+  PIN_TEMPLATES.push(((idx,variant) => (ctx,w,h,title) => drawSimpleSolid(ctx,w,h,title,SIMPLE_DESIGNS[idx],variant))(i, i % 7));
+}
 
 /* ---------------- FACEBOOK STORY TEMPLATE (no watermark) ---------------- */
 function drawStory(ctx,w,h,title){
