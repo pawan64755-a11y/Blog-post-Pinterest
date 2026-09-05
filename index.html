@@ -470,6 +470,15 @@ function fillTextCrisp(ctx, text, x, y, fillColor, fontSizePx){
 // the user's Focus Keyword box — these get the highlight-coloured treatment (same
 // size/weight as every other word) across every design. Numbers/digits get no special
 // treatment at all now — they wrap and render exactly like any other word.
+// Splits off a "(...)" segment from the title (if present), so callers can render it
+// separately — on its own line, smaller, and in a lighter colour than the main text.
+function extractParenSegment(rawTitle){
+  const m = rawTitle.match(/\(([^)]*)\)/);
+  if(!m) return { mainText: rawTitle, parenText: null };
+  const mainText = (rawTitle.slice(0, m.index) + ' ' + rawTitle.slice(m.index + m[0].length)).replace(/\s+/g,' ').trim();
+  return { mainText: mainText || rawTitle, parenText: m[0] };
+}
+
 function computeHighlightSet(words){
   const set = new Set();
   const kw = (focusKeyword || '').trim().toLowerCase();
@@ -568,7 +577,8 @@ function drawDoodleFlower(ctx,x,y,size,color){
     safety net that shrinks any line that would otherwise overflow the image width.
 */
 function fitTitle(ctx, rawTitle, opts){
-  const title = opts.uppercase ? rawTitle.toUpperCase() : rawTitle;
+  const { mainText: rawMain, parenText: rawParen } = extractParenSegment(rawTitle);
+  const title = opts.uppercase ? rawMain.toUpperCase() : rawMain;
   const words = title.split(' ').filter(Boolean);
   const highlightSet = computeHighlightSet(words); // Focus Keyword matches only
   const maxFont = opts.maxFont * fontScale;
@@ -641,6 +651,23 @@ function fitTitle(ctx, rawTitle, opts){
     chosen.totalHeight = chosen.lineHeights.reduce((a,b) => a+b, 0);
   }
 
+  // Parenthetical segment — e.g. "(And What To Do About It)" — always rendered as its
+  // OWN separate line below the main title: smaller font, lighter (semi-transparent)
+  // colour, never mixed in with the main title's words/wrapping/highlight logic.
+  if(chosen && rawParen){
+    const parenDisplay = opts.uppercase ? rawParen.toUpperCase() : rawParen;
+    let parenFontSize = Math.max(minFont*0.55, Math.round(chosen.baseSize * 0.5));
+    ctx.font = `${opts.style || 'normal'} 500 ${parenFontSize}px "${opts.fontFamily}"`;
+    const parenWidth = ctx.measureText(parenDisplay).width;
+    if(parenWidth > opts.maxWidth){
+      parenFontSize = Math.max(10, Math.round(parenFontSize * (opts.maxWidth / parenWidth)));
+    }
+    chosen.parenText = parenDisplay;
+    chosen.parenFontSize = parenFontSize;
+    chosen.parenLineHeight = parenFontSize * (opts.lineHeightRatio || 1.15) * 1.05;
+    chosen.totalHeight += chosen.parenLineHeight;
+  }
+
   return chosen;
 }
 
@@ -656,8 +683,9 @@ function drawTitle(ctx, fit, cfg){
   const highlightColor = resolveColor(cfg.numberColor || cfg.accentColor || cfg.color, userAccentColor);
 
   // Random per-word colour choice (mixes the main colour with the highlight colour) —
-  // decided once per word so a word doesn't flicker between multiple draws.
-  const wordColorPick = words.map((w,i) => !highlightSet.has(i) && cfg.colorJitter !== false && Math.random() < colorJitterChance);
+  // decided once per word so a word doesn't flicker between multiple draws. Digit/number
+  // words are explicitly excluded — ONLY Focus Keyword matches ever get the highlight colour.
+  const wordColorPick = words.map((w,i) => !highlightSet.has(i) && !/\d/.test(w) && cfg.colorJitter !== false && Math.random() < colorJitterChance);
 
   lines.forEach((line, li) => {
     const lh = lineHeights[li];
@@ -695,6 +723,20 @@ function drawTitle(ctx, fit, cfg){
     });
     y += lh;
   });
+
+  // Draw the parenthetical segment (if any) as its own separate line — smaller font,
+  // lighter/semi-transparent version of the main colour — centered below the main title.
+  if(fit.parenText){
+    ctx.font = `${cfg.style || 'normal'} 500 ${fit.parenFontSize}px "${cfg.fontFamily}"`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    const parenYMid = y + fit.parenLineHeight/2;
+    ctx.fillStyle = hexA(mainColor, 0.6);
+    ctx.fillText(fit.parenText, cfg.centerX, parenYMid);
+  }
+
   ctx.shadowColor = 'transparent';
   ctx.shadowBlur = 0;
 }
@@ -712,7 +754,8 @@ function drawTitle(ctx, fit, cfg){
     is scaled down uniformly until it fits.
 */
 function fitTitleFullBleed(ctx, rawTitle, opts){
-  const title = opts.uppercase ? rawTitle.toUpperCase() : rawTitle;
+  const { mainText: rawMain, parenText: rawParen } = extractParenSegment(rawTitle);
+  const title = opts.uppercase ? rawMain.toUpperCase() : rawMain;
   const words = title.split(' ').filter(Boolean);
   const highlightSet = computeHighlightSet(words); // Focus Keyword matches only
   const weight = opts.weight || '800';
@@ -803,7 +846,24 @@ function fitTitleFullBleed(ctx, rawTitle, opts){
   });
   totalHeight = lineData.reduce((sum,l) => sum + l.lineFontSize*lineHeightRatio, 0);
 
-  return { lineData, totalHeight, lineHeightRatio, spaceWidthRatio: spaceWidth/seedSize };
+  // Parenthetical segment — always rendered as its OWN separate line below the main
+  // stack: smaller font, lighter (semi-transparent) colour, drawn by drawTitleFullBleed().
+  let parenText = null, parenFontSize = 0, parenLineHeight = 0;
+  if(rawParen){
+    const parenDisplay = opts.uppercase ? rawParen.toUpperCase() : rawParen;
+    const biggestLine = lineData.reduce((m,l) => Math.max(m,l.lineFontSize), minFontCap);
+    parenFontSize = Math.max(minFontCap*0.55, Math.round(biggestLine * 0.5));
+    ctx.font = `${style} 500 ${parenFontSize}px "${fontFamily}"`;
+    const parenWidth = ctx.measureText(parenDisplay).width;
+    if(parenWidth > maxWidth){
+      parenFontSize = Math.max(10, Math.round(parenFontSize * (maxWidth / parenWidth)));
+    }
+    parenText = parenDisplay;
+    parenLineHeight = parenFontSize * lineHeightRatio * 1.05;
+    totalHeight += parenLineHeight;
+  }
+
+  return { lineData, totalHeight, lineHeightRatio, spaceWidthRatio: spaceWidth/seedSize, parenText, parenFontSize, parenLineHeight };
 }
 
 function drawTitleFullBleed(ctx, fit, cfg){
@@ -819,7 +879,9 @@ function drawTitleFullBleed(ctx, fit, cfg){
   lineData.forEach(l => {
     const lh = l.lineFontSize * lineHeightRatio;
     const yMid = y + lh/2;
-    const wordColorPick = l.words.map(wd => !wd.isFocus && cfg.colorJitter !== false && Math.random() < colorJitterChance);
+    // Digit/number words are excluded from the random colour jitter — ONLY Focus
+    // Keyword matches (wd.isFocus) ever get the highlight colour.
+    const wordColorPick = l.words.map(wd => !wd.isFocus && !/\d/.test(wd.text) && cfg.colorJitter !== false && Math.random() < colorJitterChance);
 
     // measure total line width using each word's own font size
     let totalW = 0;
@@ -844,6 +906,20 @@ function drawTitleFullBleed(ctx, fit, cfg){
     });
     y += lh;
   });
+
+  // Draw the parenthetical segment (if any) as its own separate line — smaller font,
+  // lighter/semi-transparent version of the main colour — centered below the stack.
+  if(fit.parenText){
+    ctx.font = `${cfg.style || 'normal'} 500 ${fit.parenFontSize}px "${cfg.fontFamily}"`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    const parenYMid = y + fit.parenLineHeight/2;
+    ctx.fillStyle = hexA(mainColor, 0.6);
+    ctx.fillText(fit.parenText, cfg.centerX, parenYMid);
+  }
+
   ctx.shadowColor = 'transparent';
   ctx.shadowBlur = 0;
 }
