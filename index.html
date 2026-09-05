@@ -272,8 +272,8 @@
 
 <header>
   <div class="badge">Relationship Cues · Pin Studio</div>
-  <h1>Blog Title se 56 Pinterest Pins + 1 Story banaiye</h1>
-  <p>Neeche apna blogpost ka title likhiye — 56 alag-alag professional design ki Pinterest pin images aur ek Facebook Story image turant ban jayegi. Title mein agar koi number ho (jaise 5, 10, 21) to wo automatically bada aur alag color mein highlight ho jayega.</p>
+  <h1>Blog Title se 61 Pinterest Pins + 1 Story banaiye</h1>
+  <p>Neeche apna blogpost ka title likhiye — 61 alag-alag professional design ki Pinterest pin images aur ek Facebook Story image turant ban jayegi. Title mein agar koi number ho (jaise 5, 10, 21) to wo automatically bada aur alag color mein highlight ho jayega.</p>
 </header>
 
 <div class="wrap">
@@ -294,15 +294,15 @@
 
   <div class="composer">
     <input id="titleInput" type="text" placeholder="Jaise: 5 Signs He's Really Falling For You" maxlength="120" />
-    <button id="generateBtn" class="btn btn-primary">✨ 56 Pins + Story Banao</button>
+    <button id="generateBtn" class="btn btn-primary">✨ 61 Pins + Story Banao</button>
     <button id="downloadZipBtn" class="btn btn-secondary" disabled>⬇ Sab ZIP mein Download</button>
   </div>
   <div class="hint">Tip: Title mein digit wala number (5, 10, 21...) daalenge to wo har design mein bada aur special color mein dikhega.</div>
   <div class="status" id="statusText"></div>
 
-  <div class="section-title">Pinterest Pins <span class="count" id="pinCount">0 / 56</span></div>
+  <div class="section-title">Pinterest Pins <span class="count" id="pinCount">0 / 61</span></div>
   <div class="grid" id="pinGrid">
-    <div class="empty-note">Title daal kar "Banao" dabaiye — yahan 56 designs preview honge.</div>
+    <div class="empty-note">Title daal kar "Banao" dabaiye — yahan 61 designs preview honge.</div>
   </div>
 
   <div class="section-title">Facebook / Instagram Story <span class="count" id="storyCount">0 / 1</span></div>
@@ -450,8 +450,14 @@ function fitTitle(ctx, rawTitle, opts){
   let baseSize = maxFont;
   let chosen = null;
 
+  // Random per-word size jitter (small/big variation) — generated once so it stays
+  // consistent while the fitting loop searches for the right overall base size.
+  const jitterMin = opts.jitterMin != null ? opts.jitterMin : 0.8;
+  const jitterMax = opts.jitterMax != null ? opts.jitterMax : 1.22;
+  const wordJitters = words.map((w,i) => i===numberIdx ? 1 : (jitterMin + Math.random()*(jitterMax-jitterMin)));
+
   while(baseSize >= minFont){
-    const wordSizes = words.map((w,i) => i===numberIdx ? Math.round(baseSize*numberScale) : baseSize);
+    const wordSizes = words.map((w,i) => i===numberIdx ? Math.round(baseSize*numberScale) : Math.round(baseSize*wordJitters[i]));
     const wordWeights = words.map((w,i) => i===numberIdx ? '900' : (opts.weight || '700'));
 
     ctx.font = `${opts.style || 'normal'} ${opts.weight || '700'} ${baseSize}px "${opts.fontFamily}"`;
@@ -491,6 +497,11 @@ function drawTitle(ctx, fit, cfg){
   const { words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, numberIdx } = fit;
   let y = cfg.centerY - totalHeight/2;
   const accentLast = cfg.accentLastWordOnLastLine && numberIdx === -1;
+  const colorJitterChance = cfg.colorJitterChance != null ? cfg.colorJitterChance : 0.32;
+
+  // Random per-word colour choice (mixes the main colour with the accent/number
+  // colour) — decided once per word so a word doesn't flicker between multiple draws.
+  const wordColorPick = words.map((w,i) => i!==numberIdx && cfg.colorJitter !== false && Math.random() < colorJitterChance);
 
   lines.forEach((line, li) => {
     const lh = lineHeights[li];
@@ -516,10 +527,140 @@ function drawTitle(ctx, fit, cfg){
       if(cfg.shadow){ ctx.shadowColor = cfg.shadow; ctx.shadowBlur = 20; ctx.shadowOffsetY = 4; }
       else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
 
-      ctx.fillStyle = isNumber ? (cfg.numberColor || cfg.accentColor || cfg.color)
-                     : (isLastOverall ? (cfg.accentColor || cfg.color) : cfg.color);
+      let fillColor;
+      if(isNumber){
+        fillColor = cfg.numberColor || cfg.accentColor || cfg.color;
+      } else if(isLastOverall){
+        fillColor = cfg.accentColor || cfg.color;
+      } else if(wordColorPick[wi]){
+        fillColor = cfg.numberColor || cfg.accentColor || cfg.color;
+      } else {
+        fillColor = cfg.color;
+      }
+      ctx.fillStyle = fillColor;
       ctx.fillText(words[wi], x, yMid);
       x += ctx.measureText(words[wi]).width;
+    });
+    y += lh;
+  });
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+}
+
+/* ---------------- FULL-BLEED VERTICAL STACK LAYOUT ---------------- */
+/*
+  fitTitleFullBleed(): lays the title out so it fills almost the ENTIRE
+  vertical span of the canvas, top to bottom, the way a big bold Pinterest
+  quote card looks (each line stretched to nearly the full width, minimal
+  gap between lines, minimal top/bottom margin).
+  - First finds natural line breaks (greedy wrap) at a seed font size.
+  - Then each line gets its OWN font size, scaled up/down so that line's
+    width fills maxWidth as closely as possible (short lines get bigger).
+  - Finally, if the stacked total height overshoots maxHeight, every line
+    is scaled down uniformly until it fits.
+*/
+function fitTitleFullBleed(ctx, rawTitle, opts){
+  const title = opts.uppercase ? rawTitle.toUpperCase() : rawTitle;
+  const words = title.split(' ').filter(Boolean);
+  const weight = opts.weight || '800';
+  const style = opts.style || 'normal';
+  const fontFamily = opts.fontFamily;
+  const maxWidth = opts.maxWidth;
+  const maxHeight = opts.maxHeight;
+  const lineHeightRatio = opts.lineHeightRatio || 1.02;
+  const maxFontCap = opts.maxFont * fontScale;
+  const minFontCap = Math.max(16, opts.minFont * fontScale);
+  const jitterMin = opts.jitterMin != null ? opts.jitterMin : 1; // 1 = no size variation
+  const jitterMax = opts.jitterMax != null ? opts.jitterMax : 1;
+
+  // Step 1: greedy wrap at a seed size to find natural line breaks.
+  const seedSize = 90;
+  ctx.font = `${style} ${weight} ${seedSize}px "${fontFamily}"`;
+  const spaceWidth = ctx.measureText(' ').width;
+  const lines = [];
+  let cur = [];
+  let curWidth = 0;
+  for(let i=0;i<words.length;i++){
+    const wWidth = ctx.measureText(words[i]).width;
+    const add = cur.length ? spaceWidth + wWidth : wWidth;
+    if((curWidth + add) > maxWidth && cur.length){
+      lines.push(cur);
+      cur = [words[i]];
+      curWidth = wWidth;
+    } else {
+      cur.push(words[i]);
+      curWidth += add;
+    }
+  }
+  if(cur.length) lines.push(cur);
+
+  // Step 2: for each line, give every word a random size jitter (same font + colour,
+  // only the size wobbles), then scale the whole line so it still fills maxWidth.
+  const lineData = lines.map(lineWords => {
+    // random multiplier per word — keeps font family/weight/colour untouched, only size varies
+    const jitters = lineWords.map(() => jitterMin + Math.random()*(jitterMax-jitterMin));
+
+    // measure at seed size with jitter applied to find the raw (unscaled) line width
+    ctx.font = `${style} ${weight} ${seedSize}px "${fontFamily}"`;
+    const rawWordWidths = lineWords.map((w,i) => ctx.measureText(w).width * jitters[i]);
+    const rawSpace = spaceWidth * (lineWords.length>1 ? (lineWords.length-1) : 0);
+    const rawTotal = rawWordWidths.reduce((a,b)=>a+b,0) + rawSpace;
+
+    // scale factor so the jittered line fills maxWidth
+    const scale = seedSize * (maxWidth / Math.max(rawTotal,1)) / seedSize;
+    let wordSizes = jitters.map(j => seedSize*scale*j);
+    wordSizes = wordSizes.map(s => Math.min(Math.max(s, minFontCap), maxFontCap));
+
+    const wordsInfo = lineWords.map((text,i) => ({ text, fontSize: wordSizes[i] }));
+    const lineFontSize = Math.max(...wordSizes); // controls this line's height
+    return { words: wordsInfo, lineFontSize };
+  });
+
+  // Step 3: total height at these sizes.
+  let totalHeight = lineData.reduce((sum,l) => sum + l.lineFontSize*lineHeightRatio, 0);
+
+  // Step 4: uniformly scale down if it overshoots maxHeight.
+  if(totalHeight > maxHeight){
+    const scale = maxHeight / totalHeight;
+    lineData.forEach(l => {
+      l.words.forEach(wd => { wd.fontSize = Math.max(wd.fontSize*scale, minFontCap*0.7); });
+      l.lineFontSize = Math.max(l.lineFontSize*scale, minFontCap*0.7);
+    });
+    totalHeight = lineData.reduce((sum,l) => sum + l.lineFontSize*lineHeightRatio, 0);
+  }
+
+  return { lineData, totalHeight, lineHeightRatio, spaceWidthRatio: spaceWidth/seedSize };
+}
+
+function drawTitleFullBleed(ctx, fit, cfg){
+  const { lineData, lineHeightRatio, spaceWidthRatio } = fit;
+  let y = cfg.centerY - fit.totalHeight/2;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const colorJitterChance = cfg.colorJitterChance != null ? cfg.colorJitterChance : 0.32;
+
+  lineData.forEach(l => {
+    const lh = l.lineFontSize * lineHeightRatio;
+    const yMid = y + lh/2;
+
+    // measure total line width using each word's own font size
+    let totalW = 0;
+    l.words.forEach((wd, idx) => {
+      ctx.font = `${cfg.style || 'normal'} ${cfg.weight || '800'} ${wd.fontSize}px "${cfg.fontFamily}"`;
+      totalW += ctx.measureText(wd.text).width;
+      if(idx>0) totalW += spaceWidthRatio * wd.fontSize;
+    });
+
+    let x = cfg.centerX - totalW/2;
+    l.words.forEach((wd, idx) => {
+      if(idx>0) x += spaceWidthRatio * wd.fontSize;
+      ctx.font = `${cfg.style || 'normal'} ${cfg.weight || '800'} ${wd.fontSize}px "${cfg.fontFamily}"`;
+      if(cfg.shadow){ ctx.shadowColor = cfg.shadow; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4; }
+      else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
+      const useAccent = cfg.colorJitter !== false && cfg.accentColor && Math.random() < colorJitterChance;
+      ctx.fillStyle = useAccent ? cfg.accentColor : cfg.color;
+      ctx.fillText(wd.text, x, yMid);
+      x += ctx.measureText(wd.text).width;
     });
     y += lh;
   });
@@ -980,6 +1121,35 @@ const PIN_TEMPLATES = [drawT1, drawT2, drawT3, drawT4, drawT5, drawT6, drawT7, d
 
 for(let i=0;i<SIMPLE_DESIGNS.length;i++){
   PIN_TEMPLATES.push(((idx,variant) => (ctx,w,h,title) => drawSimpleSolid(ctx,w,h,title,SIMPLE_DESIGNS[idx],variant))(i, i % 7));
+}
+
+/* ---------------- FULL-BLEED VERTICAL STACK TEMPLATES (max text coverage, top to bottom) ---------------- */
+const VERTICAL_STACK_DESIGNS = [
+  {bg:'#2B2730', text:'#FFFFFF', accent:'#FF3E7F', font:'Poppins',   weight:'800'},  // charcoal, like the reference image
+  {bg:'#7A1F2B', text:'#FFF3F0', accent:'#FFD93D', font:'Montserrat',weight:'800'},  // deep red
+  {bg:'#0F4C4C', text:'#EAFBF7', accent:'#FFD93D', font:'Poppins',   weight:'800'},  // deep teal
+  {bg:'#1E293B', text:'#F1F5F9', accent:'#F4A261', font:'Montserrat',weight:'800'},  // slate navy
+  {bg:'#3B2560', text:'#F0E9FF', accent:'#FF6BCB', font:'Poppins',   weight:'800'}   // deep purple
+];
+
+function drawVerticalStack(ctx,w,h,title,design){
+  ctx.fillStyle = design.bg; ctx.fillRect(0,0,w,h);
+  const fit = fitTitleFullBleed(ctx, title, {
+    fontFamily: design.font, weight: design.weight,
+    maxWidth: w*0.90, maxHeight: h*0.92,
+    maxFont: 190, minFont: 40, lineHeightRatio: 1.05,
+    jitterMin: 0.72, jitterMax: 1.32
+  });
+  drawTitleFullBleed(ctx, fit, {
+    centerX: w/2, centerY: h/2,
+    fontFamily: design.font, weight: design.weight,
+    color: design.text, accentColor: accent(design.accent), shadow: 'rgba(0,0,0,0.25)'
+  });
+  drawWatermark(ctx,w,h);
+}
+
+for(let i=0;i<VERTICAL_STACK_DESIGNS.length;i++){
+  PIN_TEMPLATES.push(((idx) => (ctx,w,h,title) => drawVerticalStack(ctx,w,h,title,VERTICAL_STACK_DESIGNS[idx]))(i));
 }
 
 /* ---------------- FACEBOOK STORY TEMPLATE (no watermark) ---------------- */
