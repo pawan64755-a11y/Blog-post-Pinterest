@@ -224,6 +224,45 @@
     accent-color:var(--coral);
     cursor:pointer;
   }
+  .tool-item input[type="text"]{
+    width:170px;
+    padding:8px 10px;
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    font-size:13px;
+    font-family:inherit;
+  }
+  .tool-item input[type="checkbox"]{
+    width:17px;
+    height:17px;
+    accent-color:var(--coral);
+    cursor:pointer;
+  }
+  .focus-box{
+    background:linear-gradient(135deg,#FFF3E0,#FFE8F0);
+    border:1.5px dashed var(--coral);
+    border-radius:var(--radius);
+    padding:14px 22px;
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:14px;
+  }
+  .focus-box label{
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .focus-box input[type="text"]{
+    flex:1;
+    min-width:220px;
+    padding:10px 12px;
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    font-size:14px;
+    font-family:inherit;
+  }
   .tool-item .value-pill{
     font-size:12px;
     font-weight:700;
@@ -278,11 +317,27 @@
 
 <div class="wrap">
 
+  <div class="focus-box">
+    <label for="focusKeywordInput">🎯 Focus Keyword</label>
+    <input id="focusKeywordInput" type="text" placeholder="Jaise: Long Distance (title ka jo word/phrase yahan likhoge wo highlight ho jayega)" maxlength="60" />
+    <button id="resetFocusBtn" class="btn-reset" type="button">Reset</button>
+  </div>
+  <div class="hint" style="margin:-6px 0 14px;">Focus Keyword daaloge to title mein wahi word(s) automatically bade, bold aur highlight colour mein dikhenge — sab 61 designs mein.</div>
+
   <div class="toolbar">
     <div class="tool-item">
-      <label for="accentColor">🎨 Accent Colour</label>
+      <label for="accentColor">🔢 Number / Highlight Colour</label>
       <input type="color" id="accentColor" value="#FF6B6B" />
       <button id="resetAccentBtn" class="btn-reset" type="button">Reset</button>
+    </div>
+    <div class="tool-item">
+      <label for="titleColorInput">🖊️ Title Text Colour</label>
+      <input type="color" id="titleColorInput" value="#222222" />
+      <button id="resetTitleColorBtn" class="btn-reset" type="button">Reset</button>
+    </div>
+    <div class="tool-item">
+      <input type="checkbox" id="applyTitleColorAll" />
+      <label for="applyTitleColorAll" style="font-weight:600;">Sabhi designs par apply karo</label>
     </div>
     <div class="tool-item">
       <label for="textSizeRange">🔠 Text Size</label>
@@ -290,7 +345,27 @@
       <span class="value-pill" id="textSizeValue">100%</span>
     </div>
   </div>
-  <div class="hint" style="margin:-4px 0 14px;">Accent Colour se number/highlight ka rang badlega · Text Size se sabhi designs ka title font chhota-bada hoga. Change karne ke baad "Banao" dabaiye.</div>
+  <div class="hint" style="margin:-4px 0 14px;">Number/Highlight Colour se number aur Focus Keyword ka rang badlega · Title Text Colour se poore title ka rang badlega (checkbox on karne par sab designs mein apply hoga, warna sirf jaha color available na ho) · Text Size se sabhi designs ka title font chhota-bada hoga. Change karne ke baad "Banao" dabaiye.</div>
+  <div class="hint" id="contrastWarning" style="display:none;margin:-8px 0 14px;color:#B3261E;font-weight:700;">⚠️ Title Text Colour aur Highlight Colour bahut milte-julte hain — inhe alag rakhiye taaki highlight word clearly dikhe.</div>
+
+  <div class="toolbar">
+    <div class="tool-item">
+      <label for="subtitleInput">📝 Subtitle / CTA</label>
+      <input type="text" id="subtitleInput" placeholder="Optional — jaise: Read the full guide →" maxlength="60" />
+    </div>
+    <div class="tool-item">
+      <label for="badgeInput">🏷️ Category Badge</label>
+      <input type="text" id="badgeInput" placeholder="Optional — jaise: Relationship Tips" maxlength="30" />
+    </div>
+    <div class="tool-item">
+      <label for="formatSelect">📐 Format</label>
+      <select id="formatSelect" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;cursor:pointer;">
+        <option value="standard" selected>Pinterest Standard (2:3)</option>
+        <option value="idea">Idea Pin / Story (9:16)</option>
+      </select>
+    </div>
+  </div>
+  <div class="hint" style="margin:-4px 0 14px;">Subtitle chhoti CTA line ki tarah bottom mein dikhega · Category Badge top-left corner mein chhota pill banega · Format se sabhi Pins ka aspect ratio badlega (dono optional hain, khaali chhod sakte hain).</div>
 
   <div class="composer">
     <input id="titleInput" type="text" placeholder="Jaise: 5 Signs He's Really Falling For You" maxlength="120" />
@@ -298,6 +373,13 @@
     <button id="downloadZipBtn" class="btn btn-secondary" disabled>⬇ Sab ZIP mein Download</button>
   </div>
   <div class="hint">Tip: Title mein digit wala number (5, 10, 21...) daalenge to wo har design mein bada aur special color mein dikhega.</div>
+
+  <div class="section-title" style="margin-top:4px;">Live Preview</div>
+  <div class="hint" style="margin:-6px 0 12px;">Title/colour/keyword change karte hi ye turant update hota hai — pura set banane se pehle look confirm kar lijiye.</div>
+  <div style="display:flex;justify-content:center;margin-bottom:20px;">
+    <canvas id="previewCanvas" width="1000" height="1500" style="width:210px;height:315px;border-radius:16px;box-shadow:0 12px 34px rgba(52,28,46,0.18);border:1px solid var(--border);background:#fff;"></canvas>
+  </div>
+
   <div class="status" id="statusText"></div>
 
   <div class="section-title">Pinterest Pins <span class="count" id="pinCount">0 / 61</span></div>
@@ -315,12 +397,18 @@
 
 <script>
 /* ---------------- CONFIG ---------------- */
-const PIN_W = 1000, PIN_H = 1500;
+let PIN_W = 1000, PIN_H = 1500;
 const STORY_W = 1080, STORY_H = 1920;
 const WATERMARK_TEXT = "Relationship Cues";
 
-/* ---------------- CUSTOMISATION STATE (colour picker / shuffle / text size) ---------------- */
-let userAccentColor = null;   // set by the colour picker; overrides each template's default number/accent colour
+/* ---------------- CUSTOMISATION STATE (colour pickers / focus keyword / text size) ---------------- */
+let userTextColor = null;     // set by the "Title Text Colour" picker; overrides every template's main text colour
+let applyTitleColorToAll = false; // set by the "Sabhi designs par apply karo" checkbox — gates userTextColor above
+let userAccentColor = null;   // set by the "Number / Highlight Colour" picker; overrides highlight/number colour
+let focusKeyword = '';        // set by the Focus Keyword box; matching word(s) get highlighted like a number
+let subtitleText = '';        // optional small CTA/subtitle line drawn near the bottom of every pin
+let badgeText = '';           // optional small category-badge pill drawn top-left of every pin
+let pinFormat = 'standard';   // 'standard' = 2:3 Pinterest, 'idea' = 9:16 Idea Pin / Story ratio
 let fontScale = 1;            // set by the text-size slider; scales every template's title font size
 const paletteSeed = 0;        // fixed index — drives the solid-card templates
 const gradientSeed = 0;       // fixed index — drives the two-tone gradient templates
@@ -361,9 +449,89 @@ const RARE_GRADIENTS = [
   {name:'Charcoal → Champagne',  stops:['#2B2B2E','#E9D8A6']}
 ];
 
-function accent(defaultColor){
-  return userAccentColor || defaultColor;
+/* ---------------- COLOUR RESOLUTION (custom colours + auto contrast-safety) ---------------- */
+function relLuminance(hex){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16)/255, g = parseInt(h.substring(2,4),16)/255, b = parseInt(h.substring(4,6),16)/255;
+  const lin = c => c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
+  return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);
 }
+function contrastRatio(hexA, hexB){
+  const L1 = relLuminance(hexA), L2 = relLuminance(hexB);
+  const lighter = Math.max(L1,L2), darker = Math.min(L1,L2);
+  return (lighter+0.05)/(darker+0.05);
+}
+function mixHex(hex, targetHex, amount){
+  const h = hex.replace('#',''), t = targetHex.replace('#','');
+  const r1=parseInt(h.substring(0,2),16), g1=parseInt(h.substring(2,4),16), b1=parseInt(h.substring(4,6),16);
+  const r2=parseInt(t.substring(0,2),16), g2=parseInt(t.substring(2,4),16), b2=parseInt(t.substring(4,6),16);
+  const r=Math.round(r1+(r2-r1)*amount), g=Math.round(g1+(g2-g1)*amount), b=Math.round(b1+(b2-b1)*amount);
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+// Nudges a user-picked colour toward white/black (in small steps, keeping the hue as
+// much as possible) until it has enough contrast to read on the design's background.
+// We don't know the exact background of every template, so we use the template's own
+// default text colour as a proxy: designers always pick a colour that already reads
+// well on that background, so a light default colour implies a dark background & vice versa.
+function makeReadable(customColor, defaultColor){
+  const bgApprox = relLuminance(defaultColor) > 0.5 ? '#000000' : '#FFFFFF';
+  let result = customColor;
+  let guard = 0;
+  while(contrastRatio(result, bgApprox) < 2.6 && guard < 6){
+    result = mixHex(result, bgApprox === '#000000' ? '#FFFFFF' : '#000000', 0.18);
+    guard++;
+  }
+  return result;
+}
+// Returns the colour to actually draw with: the design's own default colour, unless the
+// user picked a custom override — in which case the override is used, auto-corrected for
+// readability against that design's (approximate) background.
+function resolveColor(defaultColor, override){
+  if(!override) return defaultColor;
+  return makeReadable(override, defaultColor);
+}
+
+/* ---------------- TEXT CRISPNESS (auto outline so text reads on any background) ---------------- */
+function autoStrokeColor(hex){
+  return relLuminance(hex) > 0.55 ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)';
+}
+function fillTextCrisp(ctx, text, x, y, fillColor, fontSizePx){
+  const savedShadow = ctx.shadowColor, savedBlur = ctx.shadowBlur, savedOffY = ctx.shadowOffsetY;
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; // outline should stay crisp, not blurred
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  ctx.lineWidth = Math.max(1, fontSizePx * 0.045);
+  ctx.strokeStyle = autoStrokeColor(fillColor);
+  ctx.strokeText(text, x, y);
+  ctx.shadowColor = savedShadow; ctx.shadowBlur = savedBlur; ctx.shadowOffsetY = savedOffY;
+  ctx.fillStyle = fillColor;
+  ctx.fillText(text, x, y);
+}
+
+
+// Finds every word (or run of words, for multi-word phrases) in the title that matches
+// the user's Focus Keyword box, plus any word containing a digit — these all get the
+// bigger/bolder/highlight-coloured treatment across every design.
+function computeHighlightSet(words){
+  const set = new Set();
+  words.forEach((w,i) => { if(/\d/.test(w)) set.add(i); });
+  const kw = (focusKeyword || '').trim().toLowerCase();
+  if(kw){
+    const kwWords = kw.split(/\s+/).map(w => w.replace(/[^a-z0-9]/g,'')).filter(Boolean);
+    if(kwWords.length){
+      const cleanWords = words.map(w => w.toLowerCase().replace(/[^a-z0-9]/g,''));
+      for(let i=0;i<=cleanWords.length-kwWords.length;i++){
+        let match = true;
+        for(let j=0;j<kwWords.length;j++){
+          if(!cleanWords[i+j] || cleanWords[i+j] !== kwWords[j]){ match = false; break; }
+        }
+        if(match){ for(let j=0;j<kwWords.length;j++) set.add(i+j); }
+      }
+    }
+  }
+  return set;
+}
+
 function getPalette(offset){
   return SOLID_PALETTES[(paletteSeed + offset) % SOLID_PALETTES.length];
 }
@@ -443,22 +611,22 @@ function drawDoodleFlower(ctx,x,y,size,color){
 function fitTitle(ctx, rawTitle, opts){
   const title = opts.uppercase ? rawTitle.toUpperCase() : rawTitle;
   const words = title.split(' ').filter(Boolean);
-  const numberIdx = words.findIndex(w => /\d/.test(w));
+  const highlightSet = computeHighlightSet(words); // digit words + Focus Keyword matches
   const numberScale = opts.numberScale || 1.55;
   const maxFont = opts.maxFont * fontScale;
   const minFont = Math.max(18, opts.minFont * fontScale);
   let baseSize = maxFont;
   let chosen = null;
 
-  // Random per-word size jitter (small/big variation) — generated once so it stays
-  // consistent while the fitting loop searches for the right overall base size.
-  const jitterMin = opts.jitterMin != null ? opts.jitterMin : 0.8;
-  const jitterMax = opts.jitterMax != null ? opts.jitterMax : 1.22;
-  const wordJitters = words.map((w,i) => i===numberIdx ? 1 : (jitterMin + Math.random()*(jitterMax-jitterMin)));
+  // Random per-word size jitter (small/big variation) — kept subtle so the headline
+  // still reads as one clean hierarchy: only the highlight word(s) really stand out.
+  const jitterMin = opts.jitterMin != null ? opts.jitterMin : 0.94;
+  const jitterMax = opts.jitterMax != null ? opts.jitterMax : 1.08;
+  const wordJitters = words.map((w,i) => highlightSet.has(i) ? 1 : (jitterMin + Math.random()*(jitterMax-jitterMin)));
 
   while(baseSize >= minFont){
-    const wordSizes = words.map((w,i) => i===numberIdx ? Math.round(baseSize*numberScale) : Math.round(baseSize*wordJitters[i]));
-    const wordWeights = words.map((w,i) => i===numberIdx ? '900' : (opts.weight || '700'));
+    const wordSizes = words.map((w,i) => highlightSet.has(i) ? Math.round(baseSize*numberScale) : Math.round(baseSize*wordJitters[i]));
+    const wordWeights = words.map((w,i) => highlightSet.has(i) ? '900' : (opts.weight || '700'));
 
     ctx.font = `${opts.style || 'normal'} ${opts.weight || '700'} ${baseSize}px "${opts.fontFamily}"`;
     const spaceWidth = ctx.measureText(' ').width;
@@ -485,7 +653,7 @@ function fitTitle(ctx, rawTitle, opts){
     const totalHeight = lineHeights.reduce((a,b) => a+b, 0);
 
     if(totalHeight <= opts.maxHeight || baseSize <= minFont){
-      chosen = { baseSize, words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, numberIdx };
+      chosen = { baseSize, words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, highlightSet };
       break;
     }
     baseSize -= 2;
@@ -494,14 +662,19 @@ function fitTitle(ctx, rawTitle, opts){
 }
 
 function drawTitle(ctx, fit, cfg){
-  const { words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, numberIdx } = fit;
+  const { words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, highlightSet } = fit;
   let y = cfg.centerY - totalHeight/2;
-  const accentLast = cfg.accentLastWordOnLastLine && numberIdx === -1;
-  const colorJitterChance = cfg.colorJitterChance != null ? cfg.colorJitterChance : 0.32;
+  const accentLast = cfg.accentLastWordOnLastLine && highlightSet.size === 0;
+  const colorJitterChance = cfg.colorJitterChance != null ? cfg.colorJitterChance : 0.12;
 
-  // Random per-word colour choice (mixes the main colour with the accent/number
-  // colour) — decided once per word so a word doesn't flicker between multiple draws.
-  const wordColorPick = words.map((w,i) => i!==numberIdx && cfg.colorJitter !== false && Math.random() < colorJitterChance);
+  // Resolve the two colours once per draw: template default, unless the user overrode
+  // them via the colour pickers (auto-corrected for contrast against the design).
+  const mainColor = resolveColor(cfg.color, applyTitleColorToAll ? userTextColor : null);
+  const highlightColor = resolveColor(cfg.numberColor || cfg.accentColor || cfg.color, userAccentColor);
+
+  // Random per-word colour choice (mixes the main colour with the highlight colour) —
+  // decided once per word so a word doesn't flicker between multiple draws.
+  const wordColorPick = words.map((w,i) => !highlightSet.has(i) && cfg.colorJitter !== false && Math.random() < colorJitterChance);
 
   lines.forEach((line, li) => {
     const lh = lineHeights[li];
@@ -520,7 +693,7 @@ function drawTitle(ctx, fit, cfg){
 
     line.forEach((wi, idx) => {
       if(idx>0) x += spaceWidth;
-      const isNumber = wi === numberIdx;
+      const isHighlight = highlightSet.has(wi);
       const isLastOverall = accentLast && li===lines.length-1 && idx===line.length-1;
 
       ctx.font = `${cfg.style || 'normal'} ${wordWeights[wi]} ${wordSizes[wi]}px "${cfg.fontFamily}"`;
@@ -528,17 +701,13 @@ function drawTitle(ctx, fit, cfg){
       else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
 
       let fillColor;
-      if(isNumber){
-        fillColor = cfg.numberColor || cfg.accentColor || cfg.color;
-      } else if(isLastOverall){
-        fillColor = cfg.accentColor || cfg.color;
-      } else if(wordColorPick[wi]){
-        fillColor = cfg.numberColor || cfg.accentColor || cfg.color;
+      if(isHighlight || isLastOverall || wordColorPick[wi]){
+        fillColor = highlightColor;
       } else {
-        fillColor = cfg.color;
+        fillColor = mainColor;
       }
       ctx.fillStyle = fillColor;
-      ctx.fillText(words[wi], x, yMid);
+      fillTextCrisp(ctx, words[wi], x, yMid, fillColor, wordSizes[wi]);
       x += ctx.measureText(words[wi]).width;
     });
     y += lh;
@@ -562,6 +731,7 @@ function drawTitle(ctx, fit, cfg){
 function fitTitleFullBleed(ctx, rawTitle, opts){
   const title = opts.uppercase ? rawTitle.toUpperCase() : rawTitle;
   const words = title.split(' ').filter(Boolean);
+  const highlightSet = computeHighlightSet(words); // digit words + Focus Keyword matches
   const weight = opts.weight || '800';
   const style = opts.style || 'normal';
   const fontFamily = opts.fontFamily;
@@ -572,8 +742,9 @@ function fitTitleFullBleed(ctx, rawTitle, opts){
   const minFontCap = Math.max(16, opts.minFont * fontScale);
   const jitterMin = opts.jitterMin != null ? opts.jitterMin : 1; // 1 = no size variation
   const jitterMax = opts.jitterMax != null ? opts.jitterMax : 1;
+  const highlightBoost = opts.highlightBoost || 1.45; // how much bigger a focus/number word gets vs its line
 
-  // Step 1: greedy wrap at a seed size to find natural line breaks.
+  // Step 1: greedy wrap at a seed size to find natural line breaks (tracks original indices).
   const seedSize = 90;
   ctx.font = `${style} ${weight} ${seedSize}px "${fontFamily}"`;
   const spaceWidth = ctx.measureText(' ').width;
@@ -585,25 +756,26 @@ function fitTitleFullBleed(ctx, rawTitle, opts){
     const add = cur.length ? spaceWidth + wWidth : wWidth;
     if((curWidth + add) > maxWidth && cur.length){
       lines.push(cur);
-      cur = [words[i]];
+      cur = [i];
       curWidth = wWidth;
     } else {
-      cur.push(words[i]);
+      cur.push(i);
       curWidth += add;
     }
   }
   if(cur.length) lines.push(cur);
 
-  // Step 2: for each line, give every word a random size jitter (same font + colour,
-  // only the size wobbles), then scale the whole line so it still fills maxWidth.
-  const lineData = lines.map(lineWords => {
-    // random multiplier per word — keeps font family/weight/colour untouched, only size varies
-    const jitters = lineWords.map(() => jitterMin + Math.random()*(jitterMax-jitterMin));
+  // Step 2: for each line, give every word a random size jitter (font + colour choice
+  // stay separate), boosting focus-keyword/number words extra, then scale the whole
+  // line so it still fills maxWidth.
+  const lineData = lines.map(lineIdxs => {
+    const isFocusArr = lineIdxs.map(i => highlightSet.has(i));
+    const jitters = lineIdxs.map((i,j) => isFocusArr[j] ? highlightBoost : (jitterMin + Math.random()*(jitterMax-jitterMin)));
 
     // measure at seed size with jitter applied to find the raw (unscaled) line width
     ctx.font = `${style} ${weight} ${seedSize}px "${fontFamily}"`;
-    const rawWordWidths = lineWords.map((w,i) => ctx.measureText(w).width * jitters[i]);
-    const rawSpace = spaceWidth * (lineWords.length>1 ? (lineWords.length-1) : 0);
+    const rawWordWidths = lineIdxs.map((i,j) => ctx.measureText(words[i]).width * jitters[j]);
+    const rawSpace = spaceWidth * (lineIdxs.length>1 ? (lineIdxs.length-1) : 0);
     const rawTotal = rawWordWidths.reduce((a,b)=>a+b,0) + rawSpace;
 
     // scale factor so the jittered line fills maxWidth
@@ -611,7 +783,7 @@ function fitTitleFullBleed(ctx, rawTitle, opts){
     let wordSizes = jitters.map(j => seedSize*scale*j);
     wordSizes = wordSizes.map(s => Math.min(Math.max(s, minFontCap), maxFontCap));
 
-    const wordsInfo = lineWords.map((text,i) => ({ text, fontSize: wordSizes[i] }));
+    const wordsInfo = lineIdxs.map((i,j) => ({ text: words[i], fontSize: wordSizes[j], isFocus: isFocusArr[j] }));
     const lineFontSize = Math.max(...wordSizes); // controls this line's height
     return { words: wordsInfo, lineFontSize };
   });
@@ -637,16 +809,21 @@ function drawTitleFullBleed(ctx, fit, cfg){
   let y = cfg.centerY - fit.totalHeight/2;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  const colorJitterChance = cfg.colorJitterChance != null ? cfg.colorJitterChance : 0.32;
+  const colorJitterChance = cfg.colorJitterChance != null ? cfg.colorJitterChance : 0.12;
+
+  const mainColor = resolveColor(cfg.color, applyTitleColorToAll ? userTextColor : null);
+  const highlightColor = resolveColor(cfg.accentColor || cfg.color, userAccentColor);
 
   lineData.forEach(l => {
     const lh = l.lineFontSize * lineHeightRatio;
     const yMid = y + lh/2;
+    const wordColorPick = l.words.map(wd => !wd.isFocus && cfg.colorJitter !== false && Math.random() < colorJitterChance);
 
     // measure total line width using each word's own font size
     let totalW = 0;
     l.words.forEach((wd, idx) => {
-      ctx.font = `${cfg.style || 'normal'} ${cfg.weight || '800'} ${wd.fontSize}px "${cfg.fontFamily}"`;
+      const fw = wd.isFocus ? '900' : (cfg.weight || '800');
+      ctx.font = `${cfg.style || 'normal'} ${fw} ${wd.fontSize}px "${cfg.fontFamily}"`;
       totalW += ctx.measureText(wd.text).width;
       if(idx>0) totalW += spaceWidthRatio * wd.fontSize;
     });
@@ -654,12 +831,12 @@ function drawTitleFullBleed(ctx, fit, cfg){
     let x = cfg.centerX - totalW/2;
     l.words.forEach((wd, idx) => {
       if(idx>0) x += spaceWidthRatio * wd.fontSize;
-      ctx.font = `${cfg.style || 'normal'} ${cfg.weight || '800'} ${wd.fontSize}px "${cfg.fontFamily}"`;
+      const fw = wd.isFocus ? '900' : (cfg.weight || '800');
+      ctx.font = `${cfg.style || 'normal'} ${fw} ${wd.fontSize}px "${cfg.fontFamily}"`;
       if(cfg.shadow){ ctx.shadowColor = cfg.shadow; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4; }
       else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
-      const useAccent = cfg.colorJitter !== false && cfg.accentColor && Math.random() < colorJitterChance;
-      ctx.fillStyle = useAccent ? cfg.accentColor : cfg.color;
-      ctx.fillText(wd.text, x, yMid);
+      ctx.fillStyle = (wd.isFocus || wordColorPick[idx]) ? highlightColor : mainColor;
+      fillTextCrisp(ctx, wd.text, x, yMid, ctx.fillStyle, wd.fontSize);
       x += ctx.measureText(wd.text).width;
     });
     y += lh;
@@ -687,6 +864,81 @@ function drawWatermark(ctx, w, h){
   ctx.fillText(WATERMARK_TEXT, w/2, y + boxH/2 + 1);
 }
 
+/* ---------------- FINISHING PASS (grain texture, frame, subtitle/CTA, category badge) ----------------
+   Applied centrally, once, after any template has finished drawing — this way every one
+   of the 61 designs automatically gets the same premium finishing touch without having
+   to edit each template individually. */
+function drawGrain(ctx, w, h){
+  // Cheap, subtle film-grain: a light scatter of near-invisible dots. Adds texture/depth
+  // to flat colours & gradients without ever looking noisy or dirty.
+  const dotCount = Math.round((w*h) / 1900);
+  for(let i=0;i<dotCount;i++){
+    const x = Math.random()*w, y = Math.random()*h;
+    const shade = Math.random() < 0.5 ? 0 : 255;
+    ctx.fillStyle = `rgba(${shade},${shade},${shade},${(Math.random()*0.05+0.015).toFixed(3)})`;
+    ctx.fillRect(x, y, 1, 1);
+  }
+}
+function drawFrame(ctx, w, h){
+  // A slim inset frame (soft white line + hairline shadow) — reads as a deliberate
+  // editorial "mat" border on any background, light or dark.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(9, 9, w-18, h-18);
+  ctx.strokeStyle = 'rgba(0,0,0,0.10)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(9, 9, w-18, h-18);
+  ctx.restore();
+}
+function drawBadge(ctx, w, h, text){
+  if(!text) return;
+  const label = text.toUpperCase();
+  const fontSize = 24;
+  ctx.font = `700 ${fontSize}px "Poppins"`;
+  const textWidth = ctx.measureText(label).width;
+  const padX = 18, padY = 10;
+  const boxW = textWidth + padX*2, boxH = fontSize + padY*2;
+  const x = 30, y = 30;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.22)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  roundRect(ctx, x, y, boxW, boxH, boxH/2);
+  ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#3B2545';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = `700 ${fontSize}px "Poppins"`;
+  ctx.fillText(label, x+padX, y+boxH/2+1);
+}
+function drawSubtitle(ctx, w, h, text){
+  if(!text) return;
+  const fontSize = 30;
+  ctx.font = `600 ${fontSize}px "Poppins"`;
+  const textWidth = ctx.measureText(text).width;
+  const padX = 22, padY = 11;
+  const boxW = Math.min(textWidth + padX*2, w*0.88);
+  const boxH = fontSize + padY*2;
+  const x = (w-boxW)/2;
+  const y = h - boxH - 108; // stacked just above the watermark pill
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  roundRect(ctx, x, y, boxW, boxH, boxH/2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `600 ${fontSize}px "Poppins"`;
+  ctx.fillText(text, w/2, y + boxH/2 + 1);
+}
+// Master finishing pass — call this right after any template/story function finishes drawing.
+function finishCanvas(ctx, w, h){
+  drawGrain(ctx, w, h);
+  drawFrame(ctx, w, h);
+  if(badgeText.trim()) drawBadge(ctx, w, h, badgeText.trim());
+  if(subtitleText.trim()) drawSubtitle(ctx, w, h, subtitleText.trim());
+}
+
 /* ---------------- 25 PIN TEMPLATES ---------------- */
 
 function drawT1(ctx,w,h,title){ // Sunset gradient
@@ -696,7 +948,7 @@ function drawT1(ctx,w,h,title){ // Sunset gradient
   blob(ctx, w*0.15, h*0.1, 190, 'rgba(255,255,255,0.25)', 60);
   blob(ctx, w*0.85, h*0.92, 230, 'rgba(255,255,255,0.18)', 70);
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.9, maxHeight:h*0.64, maxFont:120, minFont:42, lineHeightRatio:1.12});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:accent('#00E5FF'), shadow:'rgba(150,40,20,0.35)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:'#00E5FF', shadow:'rgba(150,40,20,0.35)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -711,7 +963,7 @@ function drawT2(ctx,w,h,title){ // Midnight neon dots
   }
   ctx.globalAlpha = 1;
   const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:104, minFont:40, lineHeightRatio:1.18});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', accentColor:'#FF6BCB', accentLastWordOnLastLine:true, numberColor:accent('#FFD93D')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', accentColor:'#FF6BCB', accentLastWordOnLastLine:true, numberColor:'#FFD93D'});
   drawWatermark(ctx,w,h);
 }
 
@@ -723,7 +975,7 @@ function drawT3(ctx,w,h,title){ // Pastel blobs
   blob(ctx, w*0.82, h*0.28, 180, 'rgba(178,255,214,0.55)', 75);
   blob(ctx, w*0.28, h*0.86, 230, 'rgba(200,180,255,0.5)', 85);
   const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:150, minFont:46, lineHeightRatio:1.04});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#4A2545', numberColor:accent('#FF3E7F')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#4A2545', numberColor:'#FF3E7F'});
   drawWatermark(ctx,w,h);
 }
 
@@ -735,7 +987,7 @@ function drawT4(ctx,w,h,title){ // Halftone duotone
   g2.addColorStop(1,'rgba(45,18,62,0.6)');
   ctx.fillStyle = g2; ctx.fillRect(0,0,w,h);
   const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:100, minFont:38, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#ffffff', accentColor:'#FFD93D', accentLastWordOnLastLine:true, numberColor:accent('#6BCB77')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#ffffff', accentColor:'#FFD93D', accentLastWordOnLastLine:true, numberColor:'#6BCB77'});
   drawWatermark(ctx,w,h);
 }
 
@@ -749,7 +1001,7 @@ function drawT5(ctx,w,h,title){ // Bold color block split
   ctx.closePath();
   ctx.fill();
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'900', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.6, maxFont:106, minFont:40, lineHeightRatio:1.12});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.4, fontFamily:'Poppins', weight:'900', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:accent('#FFD93D')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.4, fontFamily:'Poppins', weight:'900', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:'#FFD93D'});
   drawWatermark(ctx,w,h);
 }
 
@@ -760,7 +1012,7 @@ function drawT6(ctx,w,h,title){ // Minimal solid editorial card (clean Pinterest
   ctx.lineWidth = 3;
   ctx.strokeRect(26,26,w-52,h-52);
   const fit = fitTitle(ctx, title, {fontFamily:'DM Serif Display', weight:'400', maxWidth:w*0.8, maxHeight:h*0.62, maxFont:110, minFont:40, lineHeightRatio:1.22});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'DM Serif Display', weight:'400', color:palette.text, numberColor:accent('#E24F4F')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'DM Serif Display', weight:'400', color:palette.text, numberColor:'#E24F4F'});
   drawWatermark(ctx,w,h);
 }
 
@@ -771,7 +1023,7 @@ function drawT7(ctx,w,h,title){ // Vibrant mesh gradient
   blob(ctx, w*0.78, h*0.14, 200, 'rgba(255,255,255,0.18)', 85);
   blob(ctx, w*0.2, h*0.82, 220, 'rgba(255,255,255,0.15)', 85);
   const fit = fitTitle(ctx, title, {fontFamily:'Lobster', weight:'400', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:96, minFont:34, lineHeightRatio:1.28});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:accent('#FFD93D')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:'#FFD93D'});
   drawWatermark(ctx,w,h);
 }
 
@@ -779,7 +1031,7 @@ function drawT8(ctx,w,h,title){ // Elegant italic statement card (soft solid bac
   const palette = getPalette(3);
   ctx.fillStyle = palette.bg; ctx.fillRect(0,0,w,h);
   const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.86, maxHeight:h*0.6, maxFont:100, minFont:38, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:palette.text, numberColor:accent('#FF3E7F')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:palette.text, numberColor:'#FF3E7F'});
   drawWatermark(ctx,w,h);
 }
 
@@ -797,7 +1049,7 @@ function drawT9(ctx,w,h,title){ // Polka dot card
   ctx.fill();
   ctx.restore();
   const fit = fitTitle(ctx, title, {fontFamily:'Caveat', weight:'700', maxWidth:cardW*0.88, maxHeight:cardH*0.82, maxFont:110, minFont:36, lineHeightRatio:1.14});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#FF3E7F', numberColor:accent('#4D96FF')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#FF3E7F', numberColor:'#4D96FF'});
   drawWatermark(ctx,w,h);
 }
 
@@ -822,7 +1074,7 @@ function drawT10(ctx,w,h,title){ // Geometric triangles
     ctx.restore();
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:106, minFont:40, lineHeightRatio:1.15});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:accent('#FF3E7F'), shadow:'rgba(0,0,0,0.3)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:'#FF3E7F', shadow:'rgba(0,0,0,0.3)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -843,7 +1095,7 @@ function drawT11(ctx,w,h,title){ // Layered waves
     ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.48, maxFont:98, minFont:38, lineHeightRatio:1.16});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.3, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:accent('#FFD93D'), shadow:'rgba(0,0,0,0.3)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.3, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.3)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -857,7 +1109,7 @@ function drawT12(ctx,w,h,title){ // Duotone diagonal grain
     ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2);
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:145, minFont:46, lineHeightRatio:1.04});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:accent('#00E5FF')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#00E5FF'});
   drawWatermark(ctx,w,h);
 }
 
@@ -875,7 +1127,7 @@ function drawT13(ctx,w,h,title){ // Grunge poster
     ctx.stroke();
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:118, minFont:42, lineHeightRatio:1.1});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#F5F0E6', numberColor:accent('#FF6B6B'), shadow:'rgba(0,0,0,0.5)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#F5F0E6', numberColor:'#FF6B6B', shadow:'rgba(0,0,0,0.5)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -885,7 +1137,7 @@ function drawT14(ctx,w,h,title){ // Bold two-tone gradient statement
   g.addColorStop(0,pair[0]); g.addColorStop(1,pair[1]);
   ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
   const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.62, maxFont:118, minFont:42, lineHeightRatio:1.08});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#ffffff', numberColor:accent('#FFD93D'), shadow:'rgba(0,0,0,0.25)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#ffffff', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.25)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -895,7 +1147,7 @@ function drawT15(ctx,w,h,title){ // Bold typographic poster
   ctx.lineWidth = 10;
   ctx.strokeRect(30,30,w-60,h-60);
   const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.7, maxFont:170, minFont:50, lineHeightRatio:1.0});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.48, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:accent('#FFD93D')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.48, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#FFD93D'});
   drawWatermark(ctx,w,h);
 }
 
@@ -910,7 +1162,7 @@ function drawT16(ctx,w,h,title){ // Terracotta → Sage, diagonal editorial
   ctx.lineWidth = 6;
   ctx.strokeRect(34,34,w-68,h-68);
   const fit = fitTitle(ctx, title, {fontFamily:'DM Serif Display', weight:'400', maxWidth:w*0.82, maxHeight:h*0.6, maxFont:104, minFont:38, lineHeightRatio:1.22});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'DM Serif Display', weight:'400', color:'#FFF8EE', numberColor:accent('#F3B79A'), shadow:'rgba(0,0,0,0.2)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'DM Serif Display', weight:'400', color:'#FFF8EE', numberColor:'#F3B79A', shadow:'rgba(0,0,0,0.2)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -922,7 +1174,7 @@ function drawT17(ctx,w,h,title){ // Dusty Mauve → Butter, soft radial boho
   blob(ctx, w*0.16, h*0.86, 200, 'rgba(255,255,255,0.16)', 80);
   blob(ctx, w*0.88, h*0.12, 170, 'rgba(255,255,255,0.14)', 70);
   const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.86, maxHeight:h*0.6, maxFont:100, minFont:38, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#3B2130', numberColor:accent('#8A3B4F')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#3B2130', numberColor:'#8A3B4F'});
   drawWatermark(ctx,w,h);
 }
 
@@ -933,7 +1185,7 @@ function drawT18(ctx,w,h,title){ // Deep Plum → Peach, glow statement
   ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
   blob(ctx, w*0.5, h*0.9, 260, 'rgba(255,255,255,0.14)', 100);
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:112, minFont:40, lineHeightRatio:1.14});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.44, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.28)', numberColor:accent('#F3B79A')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.44, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.28)', numberColor:'#F3B79A'});
   drawWatermark(ctx,w,h);
 }
 
@@ -945,7 +1197,7 @@ function drawT19(ctx,w,h,title){ // Burnt Orange → Teal, colour-block split
   ctx.moveTo(0,h*0.62); ctx.lineTo(w,h*0.38); ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
   ctx.fill();
   const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.56, maxFont:110, minFont:40, lineHeightRatio:1.1});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.34, fontFamily:'Anton', weight:'400', color:'#FFF3E6', numberColor:accent('#FFD93D'), shadow:'rgba(0,0,0,0.25)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.34, fontFamily:'Anton', weight:'400', color:'#FFF3E6', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.25)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -963,7 +1215,7 @@ function drawT20(ctx,w,h,title){ // Olive → Blush, handwritten quote card
   ctx.fill();
   ctx.restore();
   const fit = fitTitle(ctx, title, {fontFamily:'Caveat', weight:'700', maxWidth:cardW*0.88, maxHeight:cardH*0.82, maxFont:112, minFont:36, lineHeightRatio:1.14});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#3F4A22', numberColor:accent('#A64B2A')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#3F4A22', numberColor:'#A64B2A'});
   drawWatermark(ctx,w,h);
 }
 
@@ -979,7 +1231,7 @@ function drawT21(ctx,w,h,title){ // Midnight → Rose Gold, sparkle statement
   }
   ctx.globalAlpha = 1;
   const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:100, minFont:40, lineHeightRatio:1.16});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:accent('#E8B4A2')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:'#E8B4A2'});
   drawWatermark(ctx,w,h);
 }
 
@@ -994,7 +1246,7 @@ function drawT22(ctx,w,h,title){ // Rust → Powder Blue, arched shapes
   ctx.beginPath(); ctx.arc(w/2, h*0.78, w*0.55, Math.PI, 0); ctx.fill();
   ctx.restore();
   const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:150, minFont:46, lineHeightRatio:1.05});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.44, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:accent('#FFD93D'), shadow:'rgba(0,0,0,0.25)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.44, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.25)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -1016,7 +1268,7 @@ function drawT23(ctx,w,h,title){ // Cocoa → Lavender, layered waves
     ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
   }
   const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.86, maxHeight:h*0.5, maxFont:96, minFont:36, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.32, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#FBF6F0', numberColor:accent('#C9B6E4'), shadow:'rgba(0,0,0,0.25)'});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.32, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#FBF6F0', numberColor:'#C9B6E4', shadow:'rgba(0,0,0,0.25)'});
   drawWatermark(ctx,w,h);
 }
 
@@ -1028,7 +1280,7 @@ function drawT24(ctx,w,h,title){ // Forest → Salmon, dreamy blobs
   blob(ctx, w*0.2, h*0.14, 210, 'rgba(255,255,255,0.16)', 85);
   blob(ctx, w*0.84, h*0.88, 240, 'rgba(255,255,255,0.14)', 90);
   const fit = fitTitle(ctx, title, {fontFamily:'Lobster', weight:'400', maxWidth:w*0.88, maxHeight:h*0.6, maxFont:92, minFont:34, lineHeightRatio:1.28});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#FFF8F2', shadow:'rgba(0,0,0,0.3)', numberColor:accent('#F4978E')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#FFF8F2', shadow:'rgba(0,0,0,0.3)', numberColor:'#F4978E'});
   drawWatermark(ctx,w,h);
 }
 
@@ -1041,7 +1293,7 @@ function drawT25(ctx,w,h,title){ // Charcoal → Champagne Gold, minimal luxe ed
   ctx.lineWidth = 4;
   ctx.strokeRect(40,40,w-80,h-80);
   const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', uppercase:true, maxWidth:w*0.82, maxHeight:h*0.58, maxFont:92, minFont:36, lineHeightRatio:1.2});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#E9D8A6', numberColor:accent('#ffffff')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#E9D8A6', numberColor:'#ffffff'});
   drawWatermark(ctx,w,h);
 }
 
@@ -1113,7 +1365,7 @@ function drawSimpleSolid(ctx,w,h,title,design,variant){
       break;
   }
   const fit = fitTitle(ctx, title, {fontFamily:design.font, weight:design.weight, style:design.style, uppercase:design.uppercase||false, maxWidth:w*0.84, maxHeight:h*0.6, maxFont:100, minFont:38, lineHeightRatio:design.style==='italic'?1.24:1.18});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:design.font, weight:design.weight, style:design.style, color:design.text, numberColor:accent(design.accent)});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:design.font, weight:design.weight, style:design.style, color:design.text, numberColor:design.accent});
   drawWatermark(ctx,w,h);
 }
 
@@ -1143,7 +1395,7 @@ function drawVerticalStack(ctx,w,h,title,design){
   drawTitleFullBleed(ctx, fit, {
     centerX: w/2, centerY: h/2,
     fontFamily: design.font, weight: design.weight,
-    color: design.text, accentColor: accent(design.accent), shadow: 'rgba(0,0,0,0.25)'
+    color: design.text, accentColor: design.accent, shadow: 'rgba(0,0,0,0.25)'
   });
   drawWatermark(ctx,w,h);
 }
@@ -1161,7 +1413,7 @@ function drawStory(ctx,w,h,title){
   blob(ctx, w*0.85, h*0.86, 270, 'rgba(255,255,255,0.15)', 95);
 
   const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.86, maxHeight:h*0.44, maxFont:114, minFont:44, lineHeightRatio:1.18});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.42, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.25)', numberColor:accent('#FFD93D')});
+  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.42, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.25)', numberColor:'#FFD93D'});
 
   const ctaText = 'SWIPE UP';
   ctx.font = '700 40px "Poppins"';
@@ -1213,6 +1465,16 @@ const pinCount = document.getElementById('pinCount');
 const storyCount = document.getElementById('storyCount');
 const accentColorInput = document.getElementById('accentColor');
 const resetAccentBtn = document.getElementById('resetAccentBtn');
+const titleColorInput = document.getElementById('titleColorInput');
+const resetTitleColorBtn = document.getElementById('resetTitleColorBtn');
+const applyTitleColorAllInput = document.getElementById('applyTitleColorAll');
+const focusKeywordInput = document.getElementById('focusKeywordInput');
+const resetFocusBtn = document.getElementById('resetFocusBtn');
+const subtitleInput = document.getElementById('subtitleInput');
+const badgeInput = document.getElementById('badgeInput');
+const formatSelect = document.getElementById('formatSelect');
+const contrastWarning = document.getElementById('contrastWarning');
+const previewCanvas = document.getElementById('previewCanvas');
 const textSizeRange = document.getElementById('textSizeRange');
 const textSizeValue = document.getElementById('textSizeValue');
 
@@ -1270,6 +1532,9 @@ async function generateAll(){
 
   await loadFonts();
 
+  PIN_W = pinFormat === 'idea' ? 1080 : 1000;
+  PIN_H = pinFormat === 'idea' ? 1920 : 1500;
+
   const zip = new JSZip();
   const pinsFolder = zip.folder('pinterest-pins');
   currentSlug = slugify(title);
@@ -1280,6 +1545,7 @@ async function generateAll(){
     canvas.width = PIN_W; canvas.height = PIN_H;
     const ctx = canvas.getContext('2d');
     PIN_TEMPLATES[i](ctx, PIN_W, PIN_H, title);
+    finishCanvas(ctx, PIN_W, PIN_H);
     const dataUrl = canvas.toDataURL('image/png');
     const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
     const filename = `pin-design-${i+1}.png`;
@@ -1294,6 +1560,7 @@ async function generateAll(){
   storyCanvas.width = STORY_W; storyCanvas.height = STORY_H;
   const sctx = storyCanvas.getContext('2d');
   drawStory(sctx, STORY_W, STORY_H, title);
+  finishCanvas(sctx, STORY_W, STORY_H);
   const storyDataUrl = storyCanvas.toDataURL('image/png');
   const storyBlob = await new Promise(res => storyCanvas.toBlob(res, 'image/png'));
   zip.folder('facebook-story').file('facebook-story.png', storyBlob);
@@ -1329,20 +1596,105 @@ titleInput.addEventListener('keydown', (e) => {
   if(e.key === 'Enter') generateAll();
 });
 
+/* ---------------- LIVE PREVIEW + CONTRAST CHECK ---------------- */
+let previewFontsReady = false;
+let previewDebounce = null;
+function checkContrastWarning(){
+  if(userTextColor && userAccentColor){
+    const ratio = contrastRatio(userTextColor, userAccentColor);
+    contrastWarning.style.display = ratio < 1.8 ? 'block' : 'none';
+  } else {
+    contrastWarning.style.display = 'none';
+  }
+}
+async function renderPreview(){
+  const title = titleInput.value.trim() || "5 Signs He's Really Falling For You";
+  if(!previewFontsReady){ await loadFonts(); previewFontsReady = true; }
+  const pctx = previewCanvas.getContext('2d');
+  pctx.clearRect(0,0,previewCanvas.width,previewCanvas.height);
+  const w = previewCanvas.width, h = previewCanvas.height;
+  try{
+    PIN_TEMPLATES[0](pctx, w, h, title);
+    finishCanvas(pctx, w, h);
+  }catch(e){ /* preview is best-effort; ignore mid-type errors */ }
+}
+function schedulePreview(){
+  checkContrastWarning();
+  clearTimeout(previewDebounce);
+  previewDebounce = setTimeout(renderPreview, 220);
+}
+
 accentColorInput.addEventListener('input', (e) => {
   userAccentColor = e.target.value;
+  schedulePreview();
 });
 
 resetAccentBtn.addEventListener('click', () => {
   userAccentColor = null;
   accentColorInput.value = '#FF6B6B';
-  statusText.textContent = 'Accent colour reset ho gaya — designs apne original highlight colour mein banenge.';
+  statusText.textContent = 'Number/Highlight colour reset ho gaya — designs apne original highlight colour mein banenge.';
+  schedulePreview();
+});
+
+titleColorInput.addEventListener('input', (e) => {
+  userTextColor = e.target.value;
+  schedulePreview();
+});
+
+resetTitleColorBtn.addEventListener('click', () => {
+  userTextColor = null;
+  titleColorInput.value = '#222222';
+  applyTitleColorToAll = false;
+  applyTitleColorAllInput.checked = false;
+  statusText.textContent = 'Title Text Colour reset ho gaya — designs apne original text colour mein banenge.';
+  schedulePreview();
+});
+
+applyTitleColorAllInput.addEventListener('change', (e) => {
+  applyTitleColorToAll = e.target.checked;
+  schedulePreview();
+});
+
+focusKeywordInput.addEventListener('input', (e) => {
+  focusKeyword = e.target.value;
+  schedulePreview();
+});
+
+resetFocusBtn.addEventListener('click', () => {
+  focusKeyword = '';
+  focusKeywordInput.value = '';
+  statusText.textContent = 'Focus Keyword clear ho gaya.';
+  schedulePreview();
+});
+
+subtitleInput.addEventListener('input', (e) => {
+  subtitleText = e.target.value;
+  schedulePreview();
+});
+
+badgeInput.addEventListener('input', (e) => {
+  badgeText = e.target.value;
+  schedulePreview();
+});
+
+formatSelect.addEventListener('change', (e) => {
+  pinFormat = e.target.value;
+  previewCanvas.width = pinFormat === 'idea' ? 1080 : 1000;
+  previewCanvas.height = pinFormat === 'idea' ? 1920 : 1500;
+  schedulePreview();
+});
+
+titleInput.addEventListener('input', () => {
+  schedulePreview();
 });
 
 textSizeRange.addEventListener('input', (e) => {
   fontScale = Number(e.target.value) / 100;
   textSizeValue.textContent = e.target.value + '%';
+  schedulePreview();
 });
+
+schedulePreview(); // render an initial preview with the placeholder title on page load
 </script>
 </body>
 </html>
