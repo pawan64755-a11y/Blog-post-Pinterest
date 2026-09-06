@@ -1,1719 +1,480 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Relationship Cues — Pinterest Pin Generator</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog Title Image Generator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800&family=Bebas+Neue&family=Playfair+Display:ital,wght@1,700&family=Dancing+Script:wght@700&family=Lobster&family=DM+Serif+Display&family=Caveat:wght@700&family=Anton&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Baloo+2:wght@700;800&family=Fredoka:wght@600;700&family=Poppins:wght@800;900&family=Montserrat:wght@800;900&family=Rubik:wght@800;900&family=Kanit:wght@800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  :root{
-    --bg: #FFF3F0;
-    --panel: #FFFFFF;
-    --ink: #341C2E;
-    --muted: #8A6E82;
-    --coral: #FF6B6B;
-    --coral-dark: #E24F4F;
-    --pink: #FF6BCB;
-    --border: #F3DCD8;
-    --radius: 18px;
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #f4f5f7;
+    color: #1a1a1a;
+    padding: 24px 16px 80px;
   }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family:'Poppins', sans-serif;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(255,107,107,0.10), transparent 45%),
-      radial-gradient(circle at 90% 20%, rgba(255,107,203,0.10), transparent 40%),
-      var(--bg);
-    color:var(--ink);
-    min-height:100vh;
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  p.sub { color: #666; margin-top: 0; font-size: 0.95rem; }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 20px 0 28px;
+    background: #fff;
+    padding: 16px;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
   }
-  header{
-    padding:36px 20px 18px;
-    text-align:center;
+  textarea {
+    flex: 1 1 280px;
+    min-height: 60px;
+    padding: 12px 14px;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    resize: vertical;
+    font-family: inherit;
   }
-  header .badge{
-    display:inline-block;
-    padding:6px 16px;
-    border-radius:999px;
-    background:#fff;
-    border:1px solid var(--border);
-    font-size:13px;
-    font-weight:600;
-    color:var(--coral-dark);
-    margin-bottom:14px;
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    background: #2563eb;
+    transition: background 0.15s ease;
+    white-space: nowrap;
   }
-  header h1{
-    font-size:clamp(24px,4vw,36px);
-    margin:0 0 8px;
-    font-weight:800;
+  button:hover { background: #1d4ed8; }
+  button.secondary { background: #16a34a; }
+  button.secondary:hover { background: #15803d; }
+  button:disabled { background: #aaa; cursor: not-allowed; }
+  #status { font-size: 0.9rem; color: #555; margin: 4px 0 20px; min-height: 1.2em; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 18px;
   }
-  header p{
-    color:var(--muted);
-    max-width:560px;
-    margin:0 auto;
-    font-size:15px;
-    line-height:1.5;
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
   }
-  .wrap{
-    max-width:1080px;
-    margin:0 auto;
-    padding:10px 20px 60px;
+  .card canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 2 / 3;
+    background: #eee;
   }
-  .composer{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:22px;
-    display:flex;
-    gap:12px;
-    flex-wrap:wrap;
-    align-items:center;
-    box-shadow:0 10px 30px rgba(52,28,46,0.05);
+  .card .foot {
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
   }
-  .composer input[type="text"]{
-    flex:1 1 280px;
-    padding:14px 18px;
-    font-size:16px;
-    border-radius:12px;
-    border:1.5px solid var(--border);
-    font-family:'Poppins',sans-serif;
-    outline:none;
-    background:#FFFAF9;
+  .card .foot span { font-size: 0.8rem; color: #666; }
+  .card .foot button {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    background: #111827;
   }
-  .composer input[type="text"]:focus{
-    border-color:var(--coral);
+  .card .foot button:hover { background: #000; }
+  .bottom-actions {
+    margin-top: 26px;
+    display: flex;
+    justify-content: center;
   }
-  .btn{
-    padding:14px 24px;
-    border-radius:12px;
-    border:none;
-    font-family:'Poppins',sans-serif;
-    font-weight:700;
-    font-size:15px;
-    cursor:pointer;
-    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  .bottom-actions button { font-size: 1rem; padding: 14px 30px; }
+  @media (max-width: 480px) {
+    .controls { flex-direction: column; }
+    button { width: 100%; }
   }
-  .btn-primary{
-    background:linear-gradient(135deg, var(--coral), var(--pink));
-    color:#fff;
-    box-shadow:0 8px 18px rgba(255,107,107,0.35);
-  }
-  .btn-primary:hover{ transform:translateY(-1px); }
-  .btn-primary:disabled{
-    opacity:.6;
-    cursor:not-allowed;
-    transform:none;
-  }
-  .btn-secondary{
-    background:#fff;
-    border:1.5px solid var(--border);
-    color:var(--ink);
-  }
-  .btn-secondary:disabled{
-    opacity:.45;
-    cursor:not-allowed;
-  }
-  .hint{
-    margin-top:10px;
-    font-size:13px;
-    color:var(--muted);
-  }
-  .status{
-    margin-top:14px;
-    font-size:14px;
-    color:var(--muted);
-    min-height:20px;
-  }
-  .section-title{
-    margin:40px 0 16px;
-    font-weight:700;
-    font-size:18px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .section-title .count{
-    font-size:12px;
-    background:var(--coral);
-    color:#fff;
-    padding:3px 10px;
-    border-radius:999px;
-    font-weight:700;
-  }
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(190px,1fr));
-    gap:18px;
-  }
-  .card{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:16px;
-    overflow:hidden;
-    box-shadow:0 6px 18px rgba(52,28,46,0.06);
-  }
-  .card img{
-    width:100%;
-    display:block;
-    aspect-ratio:2/3;
-    object-fit:cover;
-    background:#f2eceb;
-  }
-  .card.story img{
-    aspect-ratio:9/16;
-  }
-  .card .meta{
-    padding:10px 12px 14px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:8px;
-  }
-  .card .meta span{
-    font-size:13px;
-    font-weight:600;
-    color:var(--muted);
-  }
-  .card .meta a{
-    font-size:12.5px;
-    font-weight:700;
-    color:var(--coral-dark);
-    text-decoration:none;
-    border:1.3px solid var(--border);
-    padding:6px 10px;
-    border-radius:8px;
-  }
-  .card .meta a:hover{
-    background:#FFF0EF;
-  }
-  .toolbar{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:16px 22px;
-    display:flex;
-    gap:22px;
-    flex-wrap:wrap;
-    align-items:center;
-    margin-bottom:14px;
-    box-shadow:0 10px 30px rgba(52,28,46,0.05);
-  }
-  .tool-item{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    font-size:13px;
-    font-weight:600;
-    color:var(--ink);
-  }
-  .tool-item input[type="color"]{
-    width:42px;
-    height:38px;
-    padding:0;
-    border:1.5px solid var(--border);
-    border-radius:10px;
-    cursor:pointer;
-    background:none;
-  }
-  .tool-item input[type="range"]{
-    width:150px;
-    accent-color:var(--coral);
-    cursor:pointer;
-  }
-  .tool-item input[type="text"]{
-    width:170px;
-    padding:8px 10px;
-    border:1.5px solid var(--border);
-    border-radius:10px;
-    font-size:13px;
-    font-family:inherit;
-  }
-  .tool-item input[type="checkbox"]{
-    width:17px;
-    height:17px;
-    accent-color:var(--coral);
-    cursor:pointer;
-  }
-  .focus-box{
-    background:linear-gradient(135deg,#FFF3E0,#FFE8F0);
-    border:1.5px dashed var(--coral);
-    border-radius:var(--radius);
-    padding:14px 22px;
-    display:flex;
-    gap:14px;
-    flex-wrap:wrap;
-    align-items:center;
-    margin-bottom:14px;
-  }
-  .focus-box label{
-    font-size:13.5px;
-    font-weight:700;
-    color:var(--ink);
-  }
-  .focus-box input[type="text"]{
-    flex:1;
-    min-width:220px;
-    padding:10px 12px;
-    border:1.5px solid var(--border);
-    border-radius:10px;
-    font-size:14px;
-    font-family:inherit;
-  }
-  .tool-item .value-pill{
-    font-size:12px;
-    font-weight:700;
-    color:var(--coral-dark);
-    min-width:40px;
-    text-align:center;
-  }
-  .btn-reset{
-    background:none;
-    border:none;
-    font-size:12.5px;
-    font-weight:700;
-    color:var(--muted);
-    text-decoration:underline;
-    cursor:pointer;
-    padding:4px 0;
-  }
-  .empty-note{
-    color:var(--muted);
-    font-size:14px;
-    text-align:center;
-    padding:30px 10px;
-    border:1.5px dashed var(--border);
-    border-radius:16px;
-  }
-  footer{
-    text-align:center;
-    color:var(--muted);
-    font-size:12.5px;
-    padding:20px;
-  }
-  .spinner{
-    width:16px;height:16px;
-    border-radius:50%;
-    border:2.5px solid rgba(255,255,255,0.5);
-    border-top-color:#fff;
-    display:inline-block;
-    vertical-align:-3px;
-    margin-right:8px;
-    animation:spin .7s linear infinite;
-  }
-  @keyframes spin{ to{ transform:rotate(360deg);} }
 </style>
 </head>
 <body>
-
-<header>
-  <div class="badge">Relationship Cues · Pin Studio</div>
-  <h1>Blog Title se 56 Pinterest Pins + 1 Story banaiye</h1>
-  <p>Neeche apna blogpost ka title likhiye — 56 alag-alag professional design ki Pinterest pin images aur ek Facebook Story image turant ban jayegi. Title mein agar koi number ho (jaise 5, 10, 21) to wo automatically apni ek nayi line se shuru hoga.</p>
-</header>
-
 <div class="wrap">
+  <h1>📝 Blog Title Image Generator</h1>
+  <p class="sub">Blog title daaliye — 56 alag-alag bold chunky-font designs mein image ban jayengi. Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega, text hamesha center-aligned aur image ke andar fit rahega.</p>
 
-  <div class="section-title" style="margin-top:4px;">Live Preview</div>
-  <div class="hint" style="margin:-6px 0 12px;">Title/colour/keyword/text-size change karte hi ye turant update hota hai — pura set banane se pehle look confirm kar lijiye.</div>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:20px;">
-    <canvas id="previewCanvas" width="1000" height="1500" style="width:130px;height:195px;border-radius:12px;box-shadow:0 10px 26px rgba(52,28,46,0.18);border:1px solid var(--border);background:#fff;"></canvas>
-    <div class="tool-item">
-      <label for="textSizeSlider">🔠 Text Size</label>
-      <input id="textSizeSlider" type="range" min="60" max="150" step="5" value="100" />
-      <span class="value-pill" id="textSizeValue">100%</span>
-    </div>
+  <div class="controls">
+    <textarea id="titleInput" placeholder="Apna blog title yahan likhein... e.g. Nice Guy Syndrome: The Hidden Psychology Behind It"></textarea>
+    <button id="generateBtn">🎨 56 Designs Banayein</button>
   </div>
 
-  <div class="focus-box">
-    <label for="focusKeywordInput">🎯 Focus Keyword</label>
-    <input id="focusKeywordInput" type="text" placeholder="Jaise: Long Distance (title ka jo word/phrase yahan likhoge wo highlight ho jayega)" maxlength="60" />
-    <button id="resetFocusBtn" class="btn-reset" type="button">Reset</button>
+  <div id="status"></div>
+  <div id="grid" class="grid"></div>
+
+  <div class="bottom-actions">
+    <button id="zipBtn" class="secondary" style="display:none;">⬇️ Sabhi 56 Images ZIP mein Download Karein</button>
   </div>
-  <div class="hint" style="margin:-6px 0 14px;">Focus Keyword daaloge to title mein wahi word(s) automatically highlight colour mein dikhenge — sab 56 designs mein.</div>
-
-
-  <div class="composer">
-    <input id="titleInput" type="text" placeholder="Jaise: 5 Signs He's Really Falling For You" maxlength="120" />
-    <button id="generateBtn" class="btn btn-primary">✨ 56 Pins + Story Banao</button>
-    <button id="downloadZipBtn" class="btn btn-secondary" disabled>⬇ Sab ZIP mein Download</button>
-  </div>
-
-  <div class="status" id="statusText"></div>
-
-  <div class="section-title">Pinterest Pins <span class="count" id="pinCount">0 / 56</span></div>
-  <div class="grid" id="pinGrid">
-    <div class="empty-note">Title daal kar "Banao" dabaiye — yahan 56 designs preview honge.</div>
-  </div>
-
-  <div class="section-title">Facebook / Instagram Story <span class="count" id="storyCount">0 / 1</span></div>
-  <div class="grid" id="storyGrid" style="grid-template-columns:repeat(auto-fill, minmax(160px,1fr));">
-  </div>
-
 </div>
 
-<footer>Sabhi images canvas se browser mein hi generate hoti hain — koi server ya API key nahi chahiye. GitHub Pages par free host ho sakta hai.</footer>
-
 <script>
-/* ---------------- CONFIG ---------------- */
-let PIN_W = 1000, PIN_H = 1500;
-const STORY_W = 1080, STORY_H = 1920;
-const WATERMARK_TEXT = "Relationship Cues";
+const CANVAS_W = 1000;
+const CANVAS_H = 1500;
+const PAD_X = 70;
+const PAD_Y = 90;
+const MAX_FONT = 150;
+const MIN_FONT = 26;
+const WATERMARK_RESERVE = 60;
+const MAX_LINE_SCALE = 1.3;
+const WATERMARK_TEXT = 'Relationship Cues';
+const SPECIAL_CHARS = [':','-','–','—','|',';','!','?',','];
 
-/* ---------------- CUSTOMISATION STATE (colour pickers / focus keyword / text size) ---------------- */
-const userTextColor = null;     // Title Text Colour feature removed — always use each template's own colour
-const applyTitleColorToAll = false; // feature removed, kept false so resolveColor() always falls back to template default
-const userAccentColor = null;   // Number/Highlight Colour picker removed — always use each template's own highlight colour
-let focusKeyword = '';        // set by the Focus Keyword box; matching word(s) get highlighted (colour only)
-const subtitleText = '';        // Subtitle/CTA feature removed — always empty, so drawSubtitle() never fires
-const badgeText = '';           // Category Badge feature removed — always empty, so drawBadge() never fires
-const pinFormat = 'standard';   // Format switcher removed — always Pinterest Standard (2:3)
-let fontScale = 1;              // driven by the Text Size slider (60% – 150%)
-const paletteSeed = 0;        // fixed index — drives the solid-card templates
-const gradientSeed = 0;       // fixed index — drives the two-tone gradient templates
+// ---- Building blocks used to generate 56 bold, varied templates ----
 
-const SOLID_PALETTES = [
-  {bg:'#EAF9E9', text:'#1C3B2E'},
-  {bg:'#FFEDE3', text:'#3D2352'},
-  {bg:'#E7F3FF', text:'#1B3358'},
-  {bg:'#FDEFF6', text:'#5C1F3E'},
-  {bg:'#F5F0FF', text:'#3B2560'},
-  {bg:'#FFF7DA', text:'#3A2E10'},
-  {bg:'#EAF6EF', text:'#123328'},
-  {bg:'#FDE8E8', text:'#4A1414'}
+// Bold/black-weight display fonts only
+const FONTS = [
+  { family: '"Baloo 2"',       weight: 800 },
+  { family: '"Fredoka"',       weight: 700 },
+  { family: '"Anton"',         weight: 400 }, // Anton is a black-weight display font by design
+  { family: '"Archivo Black"', weight: 400 }, // Archivo Black is bold by design
+  { family: '"Poppins"',       weight: 800 },
+  { family: '"Montserrat"',    weight: 800 },
+  { family: '"Rubik"',         weight: 800 },
+  { family: '"Kanit"',         weight: 800 },
 ];
 
-const GRADIENT_PAIRS = [
-  ['#845EC2','#FF6BCB'],
-  ['#4D96FF','#845EC2'],
-  ['#FF9A5B','#FF6B6B'],
-  ['#00C9A7','#4D96FF'],
-  ['#FFC75F','#FF6B6B'],
-  ['#7C2AE8','#FF6BCB'],
-  ['#0F6E5C','#0B4F73'],
-  ['#FF3E7F','#FF9A2E']
+const ACCENTS = [null, 'bar', 'corner', 'frame'];
+
+// Light backgrounds + dark/vivid 3-color palettes (readable on light bg)
+const LIGHT_BACKGROUNDS = ['#ffffff', '#fdf6e3', '#fbeee6', '#fff7d6', '#fdeaf3', '#eef3ff', '#f2f2f2'];
+const LIGHT_PALETTES = [
+  ['#5f9c3a', '#161616', '#d63b2f'], // green / black / red
+  ['#1f6fd6', '#111111', '#f2871f'], // blue / black / orange
+  ['#7b2fe0', '#161616', '#e0a90a'], // purple / black / yellow
+  ['#118a7e', '#161616', '#e8558d'], // teal / black / pink
+  ['#e8622c', '#0b2545', '#161616'], // orange / navy / black
+  ['#3aa655', '#7b2fe0', '#161616'], // green / purple / black
+  ['#12305c', '#d6362c', '#161616'], // navy / red / black
+  ['#d6362c', '#0b2545', '#e0a90a'], // red / navy / yellow
+  ['#0f9b8e', '#c2410c', '#161616'], // teal / burnt orange / black
+  ['#5b3fd6', '#161616', '#2fa84f'], // indigo / black / green
 ];
 
-// Rare / aesthetic colour-combination gradients (Pinterest-trend palettes) — each used by one of the 10 new templates below.
-const RARE_GRADIENTS = [
-  {name:'Terracotta → Sage',     stops:['#C97C5D','#8FA681']},
-  {name:'Dusty Mauve → Butter',  stops:['#B08497','#F4E3B2']},
-  {name:'Deep Plum → Peach',     stops:['#4B2E45','#F3B79A']},
-  {name:'Burnt Orange → Teal',   stops:['#D9713C','#1F6F6F']},
-  {name:'Olive → Blush',         stops:['#6B7A3A','#F1C6C6']},
-  {name:'Midnight → Rose Gold',  stops:['#1B2A4A','#E8B4A2']},
-  {name:'Rust → Powder Blue',    stops:['#A64B2A','#AFCBDE']},
-  {name:'Cocoa → Lavender',      stops:['#4A2E2A','#C9B6E4']},
-  {name:'Forest → Salmon',       stops:['#2F4A3E','#F4978E']},
-  {name:'Charcoal → Champagne',  stops:['#2B2B2E','#E9D8A6']}
+// Dark backgrounds + bright palettes (readable on dark bg)
+const DARK_BACKGROUNDS = ['#0d0d0d', '#141b2e', '#1a1025', '#2b0f14'];
+const DARK_PALETTES = [
+  ['#ffd400', '#ffffff', '#ff4d4d'], // yellow / white / red
+  ['#22d3ee', '#ffffff', '#f97316'], // cyan / white / orange
+  ['#a3e635', '#ffffff', '#f472b6'], // lime / white / pink
+  ['#fbbf24', '#f472b6', '#38bdf8'], // amber / pink / sky blue
 ];
 
-/* ---------------- COLOUR RESOLUTION (custom colours + auto contrast-safety) ---------------- */
-function relLuminance(hex){
-  const h = hex.replace('#','');
-  const r = parseInt(h.substring(0,2),16)/255, g = parseInt(h.substring(2,4),16)/255, b = parseInt(h.substring(4,6),16)/255;
-  const lin = c => c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4);
-  return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);
-}
-function contrastRatio(hexA, hexB){
-  const L1 = relLuminance(hexA), L2 = relLuminance(hexB);
-  const lighter = Math.max(L1,L2), darker = Math.min(L1,L2);
-  return (lighter+0.05)/(darker+0.05);
-}
-function mixHex(hex, targetHex, amount){
-  const h = hex.replace('#',''), t = targetHex.replace('#','');
-  const r1=parseInt(h.substring(0,2),16), g1=parseInt(h.substring(2,4),16), b1=parseInt(h.substring(4,6),16);
-  const r2=parseInt(t.substring(0,2),16), g2=parseInt(t.substring(2,4),16), b2=parseInt(t.substring(4,6),16);
-  const r=Math.round(r1+(r2-r1)*amount), g=Math.round(g1+(g2-g1)*amount), b=Math.round(b1+(b2-b1)*amount);
-  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
-}
-// Nudges a user-picked colour toward white/black (in small steps, keeping the hue as
-// much as possible) until it has enough contrast to read on the design's background.
-// We don't know the exact background of every template, so we use the template's own
-// default text colour as a proxy: designers always pick a colour that already reads
-// well on that background, so a light default colour implies a dark background & vice versa.
-function makeReadable(customColor, defaultColor){
-  const bgApprox = relLuminance(defaultColor) > 0.5 ? '#000000' : '#FFFFFF';
-  let result = customColor;
-  let guard = 0;
-  while(contrastRatio(result, bgApprox) < 2.6 && guard < 6){
-    result = mixHex(result, bgApprox === '#000000' ? '#FFFFFF' : '#000000', 0.18);
-    guard++;
+function buildDesigns() {
+  const designs = [];
+
+  // 40 designs on light backgrounds
+  for (let i = 0; i < 40; i++) {
+    const palette = LIGHT_PALETTES[i % LIGHT_PALETTES.length];
+    const bg = LIGHT_BACKGROUNDS[i % LIGHT_BACKGROUNDS.length];
+    const font = FONTS[i % FONTS.length];
+    const accent = ACCENTS[i % ACCENTS.length];
+    designs.push({
+      name: `Design ${designs.length + 1}`,
+      bg, colors: palette,
+      font: font.family, weight: font.weight,
+      accent
+    });
   }
-  return result;
-}
-// Returns the colour to actually draw with: the design's own default colour, unless the
-// user picked a custom override — in which case the override is used, auto-corrected for
-// readability against that design's (approximate) background.
-function resolveColor(defaultColor, override){
-  if(!override) return defaultColor;
-  return makeReadable(override, defaultColor);
+
+  // 16 designs on dark backgrounds
+  for (let i = 0; i < 16; i++) {
+    const palette = DARK_PALETTES[i % DARK_PALETTES.length];
+    const bg = DARK_BACKGROUNDS[i % DARK_BACKGROUNDS.length];
+    const font = FONTS[(i + 3) % FONTS.length];
+    const accent = ACCENTS[(i + 1) % ACCENTS.length];
+    designs.push({
+      name: `Design ${designs.length + 1}`,
+      bg, colors: palette,
+      font: font.family, weight: font.weight,
+      accent
+    });
+  }
+
+  return designs;
 }
 
-/* ---------------- TEXT CRISPNESS (auto outline so text reads on any background) ---------------- */
-function autoStrokeColor(hex){
-  return relLuminance(hex) > 0.55 ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.35)';
-}
-function fillTextCrisp(ctx, text, x, y, fillColor, fontSizePx){
-  const savedShadow = ctx.shadowColor, savedBlur = ctx.shadowBlur, savedOffY = ctx.shadowOffsetY;
-  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; // outline should stay crisp, not blurred
-  ctx.lineJoin = 'round';
-  ctx.miterLimit = 2;
-  ctx.lineWidth = Math.max(1, fontSizePx * 0.045);
-  ctx.strokeStyle = autoStrokeColor(fillColor);
-  ctx.strokeText(text, x, y);
-  ctx.shadowColor = savedShadow; ctx.shadowBlur = savedBlur; ctx.shadowOffsetY = savedOffY;
-  ctx.fillStyle = fillColor;
-  ctx.fillText(text, x, y);
-}
+// 56 total design templates
+const DESIGNS = buildDesigns();
 
-
-// Finds every word (or run of words, for multi-word phrases) in the title that matches
-// the user's Focus Keyword box — these get the highlight-coloured treatment (same
-// size/weight as every other word) across every design. Numbers/digits get no special
-// treatment at all now — they wrap and render exactly like any other word.
-// Splits off a "(...)" segment from the title (if present), so callers can render it
-// separately — on its own line, smaller, and in a lighter colour than the main text.
-function extractParenSegment(rawTitle){
-  const m = rawTitle.match(/\(([^)]*)\)/);
-  if(!m) return { mainText: rawTitle, parenText: null };
-  const mainText = (rawTitle.slice(0, m.index) + ' ' + rawTitle.slice(m.index + m[0].length)).replace(/\s+/g,' ').trim();
-  return { mainText: mainText || rawTitle, parenText: m[0] };
+function splitBySpecialChars(title) {
+  const segments = [];
+  let current = '';
+  for (const ch of title) {
+    current += ch;
+    if (SPECIAL_CHARS.includes(ch)) {
+      const trimmed = current.trim();
+      if (trimmed) segments.push(trimmed);
+      current = '';
+    }
+  }
+  if (current.trim()) segments.push(current.trim());
+  return segments.length ? segments : [title.trim()];
 }
 
-function computeHighlightSet(words){
-  const set = new Set();
-  const kw = (focusKeyword || '').trim().toLowerCase();
-  if(kw){
-    const kwWords = kw.split(/\s+/).map(w => w.replace(/[^a-z0-9]/g,'')).filter(Boolean);
-    if(kwWords.length){
-      const cleanWords = words.map(w => w.toLowerCase().replace(/[^a-z0-9]/g,''));
-      for(let i=0;i<=cleanWords.length-kwWords.length;i++){
-        let match = true;
-        for(let j=0;j<kwWords.length;j++){
-          if(!cleanWords[i+j] || cleanWords[i+j] !== kwWords[j]){ match = false; break; }
-        }
-        if(match){ for(let j=0;j<kwWords.length;j++) set.add(i+j); }
+function wrapSegment(ctx, text, maxWidth) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width <= maxWidth || !line) {
+      // if a single word itself is too wide, still place it alone
+      if (ctx.measureText(test).width <= maxWidth) {
+        line = test;
+      } else {
+        if (line) lines.push(line);
+        line = w;
       }
+    } else {
+      lines.push(line);
+      line = w;
     }
   }
-  return set;
+  if (line) lines.push(line);
+  return lines;
 }
 
-function getPalette(offset){
-  return SOLID_PALETTES[(paletteSeed + offset) % SOLID_PALETTES.length];
-}
-function getGradientPair(offset){
-  return GRADIENT_PAIRS[(gradientSeed + (offset||0)) % GRADIENT_PAIRS.length];
-}
-
-/* ---------------- BASIC UTILITIES ---------------- */
-function hexA(hex, alpha){
-  const h = hex.replace('#','');
-  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
-  return `rgba(${r},${g},${b},${alpha})`;
+function buildLinesForFont(ctx, segments, fontFamily, weight, fontSize, maxWidth) {
+  ctx.font = `${weight} ${fontSize}px ${fontFamily}`;
+  const lines = [];
+  segments.forEach((seg, segIndex) => {
+    const subLines = wrapSegment(ctx, seg, maxWidth);
+    subLines.forEach(sl => lines.push({ text: sl, segIndex }));
+  });
+  return lines;
 }
 
-function roundRect(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);
-  ctx.arcTo(x,y,x+w,y,r);
-  ctx.closePath();
-}
-
-function blob(ctx,x,y,radius,color,blurPx){
-  ctx.save();
-  ctx.filter = `blur(${blurPx}px)`;
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x,y,radius,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function dotsPattern(ctx,w,h,color,spacing,radius,alpha){
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = color;
-  for(let yy=spacing/2; yy<h; yy+=spacing){
-    for(let xx=spacing/2; xx<w; xx+=spacing){
-      ctx.beginPath();
-      ctx.arc(xx,yy,radius,0,Math.PI*2);
-      ctx.fill();
-    }
-  }
-  ctx.restore();
-}
-
-function drawDoodleHeart(ctx,x,y,size,color){
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.moveTo(x, y+size*0.3);
-  ctx.bezierCurveTo(x-size/2,y-size/3, x-size,y+size/4, x, y+size*0.9);
-  ctx.bezierCurveTo(x+size,y+size/4, x+size/2,y-size/3, x, y+size*0.3);
-  ctx.stroke();
-}
-
-function drawDoodleFlower(ctx,x,y,size,color){
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2.2;
-  for(let i=0;i<5;i++){
-    const angle = (Math.PI*2/5)*i;
-    ctx.beginPath();
-    ctx.ellipse(x+Math.cos(angle)*size*0.35, y+Math.sin(angle)*size*0.35, size*0.28, size*0.16, angle, 0, Math.PI*2);
-    ctx.stroke();
-  }
-}
-
-/* ---------------- TITLE FITTING + NUMBER HIGHLIGHT ---------------- */
-/*
-  fitTitle(): word-by-word layout engine.
-  - Detects digit words and Focus Keyword matches, and renders them in the highlight
-    colour (same normal size/weight as the rest of the words — nothing gets enlarged
-    or extra-bolded, so it can never spill outside the image).
-  - Wraps text into lines that respect the per-word (variable) sizes, with a hard
-    safety net that shrinks any line that would otherwise overflow the image width.
-*/
-function fitTitle(ctx, rawTitle, opts){
-  const { mainText: rawMain, parenText: rawParen } = extractParenSegment(rawTitle);
-  const title = opts.uppercase ? rawMain.toUpperCase() : rawMain;
-  const words = title.split(' ').filter(Boolean);
-  const highlightSet = computeHighlightSet(words); // Focus Keyword matches only
-  const maxFont = opts.maxFont * fontScale;
-  const minFont = Math.max(18, opts.minFont * fontScale);
-  let baseSize = maxFont;
+function fitText(ctx, segments, fontFamily, weight) {
+  const maxWidth = CANVAS_W - PAD_X * 2;
+  const availableHeight = CANVAS_H - PAD_Y * 2 - WATERMARK_RESERVE;
   let chosen = null;
 
-  // Random per-word size jitter (small/big variation) — kept subtle so the headline
-  // still reads as one clean hierarchy: only the highlight word(s) really stand out.
-  const jitterMin = opts.jitterMin != null ? opts.jitterMin : 0.94;
-  const jitterMax = opts.jitterMax != null ? opts.jitterMax : 1.08;
-  const wordJitters = words.map((w,i) => highlightSet.has(i) ? 1 : (jitterMin + Math.random()*(jitterMax-jitterMin)));
+  for (let fs = MAX_FONT; fs >= MIN_FONT; fs -= 2) {
+    const lines = buildLinesForFont(ctx, segments, fontFamily, weight, fs, maxWidth);
+    ctx.font = `${weight} ${fs}px ${fontFamily}`;
+    const widths = lines.map(l => ctx.measureText(l.text).width);
 
-  while(baseSize >= minFont){
-    // Focus Keyword / number words now stay at NORMAL size + NORMAL weight, exactly like
-    // every other word (wordJitters is already forced to 1 for them above) — only their
-    // COLOUR changes (handled later in drawTitle). This stops the keyword from being
-    // rendered so big/bold that it spills outside the image.
-    const wordSizes = words.map((w,i) => Math.round(baseSize*wordJitters[i]));
-    const wordWeights = words.map((w,i) => opts.weight || '700');
+    // reject this size if any line's raw width already exceeds canvas width
+    if (widths.some(w => w > maxWidth + 0.5)) continue;
 
-    ctx.font = `${opts.style || 'normal'} ${opts.weight || '700'} ${baseSize}px "${opts.fontFamily}"`;
-    const spaceWidth = ctx.measureText(' ').width;
+    // per-line stretch: short lines scale UP toward full width, long lines stay ~1x
+    // (never shrink below 1x, so a big line never overflows past maxWidth)
+    const scales = widths.map(w => (w > 0 ? Math.min(MAX_LINE_SCALE, maxWidth / w) : 1));
+    const lineHeights = scales.map(s => fs * s * 1.18);
+    const totalHeight = lineHeights.reduce((a, b) => a + b, 0);
 
-    const lines = [];
-    let cur = [];
-    let curWidth = 0;
-    for(let i=0;i<words.length;i++){
-      ctx.font = `${opts.style || 'normal'} ${wordWeights[i]} ${wordSizes[i]}px "${opts.fontFamily}"`;
-      const wWidth = ctx.measureText(words[i]).width;
-      const add = cur.length ? spaceWidth + wWidth : wWidth;
-      if(curWidth + add > opts.maxWidth && cur.length){
-        lines.push(cur);
-        cur = [i];
-        curWidth = wWidth;
-      } else {
-        cur.push(i);
-        curWidth += add;
-      }
-    }
-    if(cur.length) lines.push(cur);
-
-    const lineHeights = lines.map(line => Math.max(...line.map(i => wordSizes[i])) * (opts.lineHeightRatio || 1.15));
-    const totalHeight = lineHeights.reduce((a,b) => a+b, 0);
-
-    if(totalHeight <= opts.maxHeight || baseSize <= minFont){
-      chosen = { baseSize, words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, highlightSet };
+    if (totalHeight <= availableHeight) {
+      chosen = { fontSize: fs, lines, scales, lineHeights, totalHeight };
       break;
     }
-    baseSize -= 2;
   }
 
-  // HARD SAFETY NET: no matter how big any word (including the Focus Keyword) ends up,
-  // guarantee that every line's rendered width stays within opts.maxWidth — i.e. inside
-  // the image — by shrinking just that line if it would otherwise overflow.
-  if(chosen){
-    chosen.lines.forEach((line, li) => {
-      let lineWidth = 0;
-      line.forEach((wi, idx) => {
-        ctx.font = `${opts.style || 'normal'} ${chosen.wordWeights[wi]} ${chosen.wordSizes[wi]}px "${opts.fontFamily}"`;
-        lineWidth += ctx.measureText(chosen.words[wi]).width;
-        if(idx>0) lineWidth += chosen.spaceWidth;
-      });
-      if(lineWidth > opts.maxWidth){
-        const scale = opts.maxWidth / lineWidth;
-        line.forEach(wi => { chosen.wordSizes[wi] = Math.max(10, Math.round(chosen.wordSizes[wi]*scale)); });
-        chosen.lineHeights[li] = Math.max(...line.map(wi => chosen.wordSizes[wi])) * (opts.lineHeightRatio || 1.15);
-      }
-    });
-    chosen.totalHeight = chosen.lineHeights.reduce((a,b) => a+b, 0);
+  if (!chosen) {
+    // safety fallback: smallest font, no stretching, guaranteed to fit width
+    const lines = buildLinesForFont(ctx, segments, fontFamily, weight, MIN_FONT, maxWidth);
+    const lineHeights = lines.map(() => MIN_FONT * 1.18);
+    chosen = {
+      fontSize: MIN_FONT,
+      lines,
+      scales: lines.map(() => 1),
+      lineHeights,
+      totalHeight: lineHeights.reduce((a, b) => a + b, 0)
+    };
   }
-
-  // Parenthetical segment — e.g. "(And What To Do About It)" — always rendered as its
-  // OWN separate line below the main title: smaller font, lighter (semi-transparent)
-  // colour, never mixed in with the main title's words/wrapping/highlight logic.
-  if(chosen && rawParen){
-    const parenDisplay = opts.uppercase ? rawParen.toUpperCase() : rawParen;
-    let parenFontSize = Math.max(minFont*0.55, Math.round(chosen.baseSize * 0.5));
-    ctx.font = `${opts.style || 'normal'} 500 ${parenFontSize}px "${opts.fontFamily}"`;
-    const parenWidth = ctx.measureText(parenDisplay).width;
-    if(parenWidth > opts.maxWidth){
-      parenFontSize = Math.max(10, Math.round(parenFontSize * (opts.maxWidth / parenWidth)));
-    }
-    chosen.parenText = parenDisplay;
-    chosen.parenFontSize = parenFontSize;
-    chosen.parenLineHeight = parenFontSize * (opts.lineHeightRatio || 1.15) * 1.05;
-    chosen.totalHeight += chosen.parenLineHeight;
-  }
-
   return chosen;
 }
 
-function drawTitle(ctx, fit, cfg){
-  const { words, wordSizes, wordWeights, lines, lineHeights, totalHeight, spaceWidth, highlightSet } = fit;
-  let y = cfg.centerY - totalHeight/2;
-  const accentLast = cfg.accentLastWordOnLastLine && highlightSet.size === 0;
-  const colorJitterChance = cfg.colorJitterChance != null ? cfg.colorJitterChance : 0.12;
+function drawDesign(canvas, design, title) {
+  const ctx = canvas.getContext('2d');
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
 
-  // Resolve the two colours once per draw: template default, unless the user overrode
-  // them via the colour pickers (auto-corrected for contrast against the design).
-  const mainColor = resolveColor(cfg.color, applyTitleColorToAll ? userTextColor : null);
-  const highlightColor = resolveColor(cfg.numberColor || cfg.accentColor || cfg.color, userAccentColor);
+  // background
+  ctx.fillStyle = design.bg;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // Random per-word colour choice (mixes the main colour with the highlight colour) —
-  // decided once per word so a word doesn't flicker between multiple draws. Digit/number
-  // words are explicitly excluded — ONLY Focus Keyword matches ever get the highlight colour.
-  const wordColorPick = words.map((w,i) => !highlightSet.has(i) && !/\d/.test(w) && cfg.colorJitter !== false && Math.random() < colorJitterChance);
-
-  lines.forEach((line, li) => {
-    const lh = lineHeights[li];
-    const yMid = y + lh/2;
-
-    let totalW = 0;
-    line.forEach((wi, idx) => {
-      ctx.font = `${cfg.style || 'normal'} ${wordWeights[wi]} ${wordSizes[wi]}px "${cfg.fontFamily}"`;
-      totalW += ctx.measureText(words[wi]).width;
-      if(idx>0) totalW += spaceWidth;
-    });
-
-    let x = cfg.centerX - totalW/2;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-
-    line.forEach((wi, idx) => {
-      if(idx>0) x += spaceWidth;
-      const isHighlight = highlightSet.has(wi);
-      const isLastOverall = accentLast && li===lines.length-1 && idx===line.length-1;
-
-      ctx.font = `${cfg.style || 'normal'} ${wordWeights[wi]} ${wordSizes[wi]}px "${cfg.fontFamily}"`;
-      if(cfg.shadow){ ctx.shadowColor = cfg.shadow; ctx.shadowBlur = 20; ctx.shadowOffsetY = 4; }
-      else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
-
-      let fillColor;
-      if(isHighlight || isLastOverall || wordColorPick[wi]){
-        fillColor = highlightColor;
-      } else {
-        fillColor = mainColor;
-      }
-      ctx.fillStyle = fillColor;
-      fillTextCrisp(ctx, words[wi], x, yMid, fillColor, wordSizes[wi]);
-      x += ctx.measureText(words[wi]).width;
-    });
-    y += lh;
-  });
-
-  // Draw the parenthetical segment (if any) as its own separate line — smaller font,
-  // lighter/semi-transparent version of the main colour — centered below the main title.
-  if(fit.parenText){
-    ctx.font = `${cfg.style || 'normal'} 500 ${fit.parenFontSize}px "${cfg.fontFamily}"`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    const parenYMid = y + fit.parenLineHeight/2;
-    ctx.fillStyle = hexA(mainColor, 0.6);
-    ctx.fillText(fit.parenText, cfg.centerX, parenYMid);
-  }
-
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-}
-
-/* ---------------- FULL-BLEED VERTICAL STACK LAYOUT ---------------- */
-/*
-  fitTitleFullBleed(): lays the title out so it fills almost the ENTIRE
-  vertical span of the canvas, top to bottom, the way a big bold Pinterest
-  quote card looks (each line stretched to nearly the full width, minimal
-  gap between lines, minimal top/bottom margin).
-  - First finds natural line breaks (greedy wrap) at a seed font size.
-  - Then each line gets its OWN font size, scaled up/down so that line's
-    width fills maxWidth as closely as possible (short lines get bigger).
-  - Finally, if the stacked total height overshoots maxHeight, every line
-    is scaled down uniformly until it fits.
-*/
-function fitTitleFullBleed(ctx, rawTitle, opts){
-  const { mainText: rawMain, parenText: rawParen } = extractParenSegment(rawTitle);
-  const title = opts.uppercase ? rawMain.toUpperCase() : rawMain;
-  const words = title.split(' ').filter(Boolean);
-  const highlightSet = computeHighlightSet(words); // Focus Keyword matches only
-  const weight = opts.weight || '800';
-  const style = opts.style || 'normal';
-  const fontFamily = opts.fontFamily;
-  const maxWidth = opts.maxWidth;
-  const maxHeight = opts.maxHeight;
-  const lineHeightRatio = opts.lineHeightRatio || 1.02;
-  const maxFontCap = opts.maxFont * fontScale;
-  const minFontCap = Math.max(16, opts.minFont * fontScale);
-  const jitterMin = opts.jitterMin != null ? opts.jitterMin : 1; // 1 = no size variation
-  const jitterMax = opts.jitterMax != null ? opts.jitterMax : 1;
-  const highlightBoost = opts.highlightBoost || 1; // Focus Keyword words now stay same size as the rest of the line — only colour differs
-
-  // Step 1: greedy wrap at a seed size to find natural line breaks (tracks original indices).
-  const seedSize = 90;
-  ctx.font = `${style} ${weight} ${seedSize}px "${fontFamily}"`;
-  const spaceWidth = ctx.measureText(' ').width;
-  const spaceWidthRatio = spaceWidth / seedSize; // declared up-front — used below AND at return
-  const lines = [];
-  let cur = [];
-  let curWidth = 0;
-  for(let i=0;i<words.length;i++){
-    const wWidth = ctx.measureText(words[i]).width;
-    const add = cur.length ? spaceWidth + wWidth : wWidth;
-    if((curWidth + add) > maxWidth && cur.length){
-      lines.push(cur);
-      cur = [i];
-      curWidth = wWidth;
-    } else {
-      cur.push(i);
-      curWidth += add;
-    }
-  }
-  if(cur.length) lines.push(cur);
-
-  // Step 2: for each line, give every word a random size jitter (font + colour choice
-  // stay separate), boosting focus-keyword/number words extra, then scale the whole
-  // line so it still fills maxWidth.
-  const lineData = lines.map(lineIdxs => {
-    const isFocusArr = lineIdxs.map(i => highlightSet.has(i));
-    const jitters = lineIdxs.map((i,j) => isFocusArr[j] ? highlightBoost : (jitterMin + Math.random()*(jitterMax-jitterMin)));
-
-    // measure at seed size with jitter applied to find the raw (unscaled) line width
-    ctx.font = `${style} ${weight} ${seedSize}px "${fontFamily}"`;
-    const rawWordWidths = lineIdxs.map((i,j) => ctx.measureText(words[i]).width * jitters[j]);
-    const rawSpace = spaceWidth * (lineIdxs.length>1 ? (lineIdxs.length-1) : 0);
-    const rawTotal = rawWordWidths.reduce((a,b)=>a+b,0) + rawSpace;
-
-    // scale factor so the jittered line fills maxWidth
-    const scale = seedSize * (maxWidth / Math.max(rawTotal,1)) / seedSize;
-    let wordSizes = jitters.map(j => seedSize*scale*j);
-    wordSizes = wordSizes.map(s => Math.min(Math.max(s, minFontCap), maxFontCap));
-
-    const wordsInfo = lineIdxs.map((i,j) => ({ text: words[i], fontSize: wordSizes[j], isFocus: isFocusArr[j] }));
-    const lineFontSize = Math.max(...wordSizes); // controls this line's height
-    return { words: wordsInfo, lineFontSize };
-  });
-
-  // Step 3: total height at these sizes.
-  let totalHeight = lineData.reduce((sum,l) => sum + l.lineFontSize*lineHeightRatio, 0);
-
-  // Step 4: uniformly scale down if it overshoots maxHeight.
-  if(totalHeight > maxHeight){
-    const scale = maxHeight / totalHeight;
-    lineData.forEach(l => {
-      l.words.forEach(wd => { wd.fontSize = Math.max(wd.fontSize*scale, minFontCap*0.7); });
-      l.lineFontSize = Math.max(l.lineFontSize*scale, minFontCap*0.7);
-    });
-    totalHeight = lineData.reduce((sum,l) => sum + l.lineFontSize*lineHeightRatio, 0);
-  }
-
-  // HARD SAFETY NET: guarantee every line's rendered width stays within maxWidth —
-  // i.e. inside the image — even for an extreme Focus Keyword, by shrinking just
-  // that line if it would otherwise overflow.
-  lineData.forEach(l => {
-    ctx.font = `${style} ${weight} ${l.lineFontSize}px "${fontFamily}"`; // ensure current metrics
-    let lineWidth = 0;
-    l.words.forEach((wd, idx) => {
-      ctx.font = `${style} ${weight} ${wd.fontSize}px "${fontFamily}"`;
-      lineWidth += ctx.measureText(wd.text).width;
-      if(idx>0) lineWidth += spaceWidthRatio * wd.fontSize;
-    });
-    if(lineWidth > maxWidth){
-      const scale = maxWidth / lineWidth;
-      l.words.forEach(wd => { wd.fontSize = Math.max(10, wd.fontSize*scale); });
-      l.lineFontSize = Math.max(...l.words.map(wd => wd.fontSize));
-    }
-  });
-  totalHeight = lineData.reduce((sum,l) => sum + l.lineFontSize*lineHeightRatio, 0);
-
-  // Parenthetical segment — always rendered as its OWN separate line below the main
-  // stack: smaller font, lighter (semi-transparent) colour, drawn by drawTitleFullBleed().
-  let parenText = null, parenFontSize = 0, parenLineHeight = 0;
-  if(rawParen){
-    const parenDisplay = opts.uppercase ? rawParen.toUpperCase() : rawParen;
-    const biggestLine = lineData.reduce((m,l) => Math.max(m,l.lineFontSize), minFontCap);
-    parenFontSize = Math.max(minFontCap*0.55, Math.round(biggestLine * 0.5));
-    ctx.font = `${style} 500 ${parenFontSize}px "${fontFamily}"`;
-    const parenWidth = ctx.measureText(parenDisplay).width;
-    if(parenWidth > maxWidth){
-      parenFontSize = Math.max(10, Math.round(parenFontSize * (maxWidth / parenWidth)));
-    }
-    parenText = parenDisplay;
-    parenLineHeight = parenFontSize * lineHeightRatio * 1.05;
-    totalHeight += parenLineHeight;
-  }
-
-  return { lineData, totalHeight, lineHeightRatio, spaceWidthRatio, parenText, parenFontSize, parenLineHeight };
-}
-
-function drawTitleFullBleed(ctx, fit, cfg){
-  const { lineData, lineHeightRatio, spaceWidthRatio } = fit;
-  let y = cfg.centerY - fit.totalHeight/2;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  const colorJitterChance = cfg.colorJitterChance != null ? cfg.colorJitterChance : 0.12;
-
-  const mainColor = resolveColor(cfg.color, applyTitleColorToAll ? userTextColor : null);
-  const highlightColor = resolveColor(cfg.accentColor || cfg.color, userAccentColor);
-
-  lineData.forEach(l => {
-    const lh = l.lineFontSize * lineHeightRatio;
-    const yMid = y + lh/2;
-    // Digit/number words are excluded from the random colour jitter — ONLY Focus
-    // Keyword matches (wd.isFocus) ever get the highlight colour.
-    const wordColorPick = l.words.map(wd => !wd.isFocus && !/\d/.test(wd.text) && cfg.colorJitter !== false && Math.random() < colorJitterChance);
-
-    // measure total line width using each word's own font size
-    let totalW = 0;
-    l.words.forEach((wd, idx) => {
-      // Focus Keyword words keep the SAME weight as normal words now — only colour changes.
-      const fw = cfg.weight || '800';
-      ctx.font = `${cfg.style || 'normal'} ${fw} ${wd.fontSize}px "${cfg.fontFamily}"`;
-      totalW += ctx.measureText(wd.text).width;
-      if(idx>0) totalW += spaceWidthRatio * wd.fontSize;
-    });
-
-    let x = cfg.centerX - totalW/2;
-    l.words.forEach((wd, idx) => {
-      if(idx>0) x += spaceWidthRatio * wd.fontSize;
-      const fw = cfg.weight || '800';
-      ctx.font = `${cfg.style || 'normal'} ${fw} ${wd.fontSize}px "${cfg.fontFamily}"`;
-      if(cfg.shadow){ ctx.shadowColor = cfg.shadow; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4; }
-      else { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
-      ctx.fillStyle = (wd.isFocus || wordColorPick[idx]) ? highlightColor : mainColor;
-      fillTextCrisp(ctx, wd.text, x, yMid, ctx.fillStyle, wd.fontSize);
-      x += ctx.measureText(wd.text).width;
-    });
-    y += lh;
-  });
-
-  // Draw the parenthetical segment (if any) as its own separate line — smaller font,
-  // lighter/semi-transparent version of the main colour — centered below the stack.
-  if(fit.parenText){
-    ctx.font = `${cfg.style || 'normal'} 500 ${fit.parenFontSize}px "${cfg.fontFamily}"`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    const parenYMid = y + fit.parenLineHeight/2;
-    ctx.fillStyle = hexA(mainColor, 0.6);
-    ctx.fillText(fit.parenText, cfg.centerX, parenYMid);
-  }
-
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-}
-
-function drawWatermark(ctx, w, h){
-  const fontSize = 28;
-  ctx.font = `600 ${fontSize}px "Poppins"`;
-  const textWidth = ctx.measureText(WATERMARK_TEXT).width;
-  const padX = 26, padY = 13;
-  const boxW = textWidth + padX*2;
-  const boxH = fontSize + padY*2;
-  const x = (w - boxW)/2;
-  const y = h - boxH - 40;
-  ctx.fillStyle = 'rgba(0,0,0,0.42)';
-  roundRect(ctx, x, y, boxW, boxH, boxH/2);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `600 ${fontSize}px "Poppins"`;
-  ctx.fillText(WATERMARK_TEXT, w/2, y + boxH/2 + 1);
-}
-
-/* ---------------- FINISHING PASS (grain texture, frame, subtitle/CTA, category badge) ----------------
-   Applied centrally, once, after any template has finished drawing — this way every one
-   of the 56 designs automatically gets the same premium finishing touch without having
-   to edit each template individually. */
-function drawGrain(ctx, w, h){
-  // Cheap, subtle film-grain: a light scatter of near-invisible dots. Adds texture/depth
-  // to flat colours & gradients without ever looking noisy or dirty.
-  const dotCount = Math.round((w*h) / 1900);
-  for(let i=0;i<dotCount;i++){
-    const x = Math.random()*w, y = Math.random()*h;
-    const shade = Math.random() < 0.5 ? 0 : 255;
-    ctx.fillStyle = `rgba(${shade},${shade},${shade},${(Math.random()*0.05+0.015).toFixed(3)})`;
-    ctx.fillRect(x, y, 1, 1);
-  }
-}
-function drawFrame(ctx, w, h){
-  // A slim inset frame (soft white line + hairline shadow) — reads as a deliberate
-  // editorial "mat" border on any background, light or dark.
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.32)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(9, 9, w-18, h-18);
-  ctx.strokeStyle = 'rgba(0,0,0,0.10)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(9, 9, w-18, h-18);
-  ctx.restore();
-}
-function drawBadge(ctx, w, h, text){
-  if(!text) return;
-  const label = text.toUpperCase();
-  const fontSize = 24;
-  ctx.font = `700 ${fontSize}px "Poppins"`;
-  const textWidth = ctx.measureText(label).width;
-  const padX = 18, padY = 10;
-  const boxW = textWidth + padX*2, boxH = fontSize + padY*2;
-  const x = 30, y = 30;
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.22)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 3;
-  ctx.fillStyle = 'rgba(255,255,255,0.95)';
-  roundRect(ctx, x, y, boxW, boxH, boxH/2);
-  ctx.fill();
-  ctx.restore();
-  ctx.fillStyle = '#3B2545';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.font = `700 ${fontSize}px "Poppins"`;
-  ctx.fillText(label, x+padX, y+boxH/2+1);
-}
-function drawSubtitle(ctx, w, h, text){
-  if(!text) return;
-  const fontSize = 30;
-  ctx.font = `600 ${fontSize}px "Poppins"`;
-  const textWidth = ctx.measureText(text).width;
-  const padX = 22, padY = 11;
-  const boxW = Math.min(textWidth + padX*2, w*0.88);
-  const boxH = fontSize + padY*2;
-  const x = (w-boxW)/2;
-  const y = h - boxH - 108; // stacked just above the watermark pill
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  roundRect(ctx, x, y, boxW, boxH, boxH/2);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `600 ${fontSize}px "Poppins"`;
-  ctx.fillText(text, w/2, y + boxH/2 + 1);
-}
-// Master finishing pass — call this right after any template/story function finishes drawing.
-function finishCanvas(ctx, w, h){
-  drawGrain(ctx, w, h);
-  drawFrame(ctx, w, h);
-  if(badgeText.trim()) drawBadge(ctx, w, h, badgeText.trim());
-  if(subtitleText.trim()) drawSubtitle(ctx, w, h, subtitleText.trim());
-}
-
-/* ---------------- 25 PIN TEMPLATES ---------------- */
-
-function drawT1(ctx,w,h,title){ // Sunset gradient
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,'#FF6B6B'); g.addColorStop(0.55,'#FF9A5B'); g.addColorStop(1,'#FFD93D');
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  blob(ctx, w*0.15, h*0.1, 190, 'rgba(255,255,255,0.25)', 60);
-  blob(ctx, w*0.85, h*0.92, 230, 'rgba(255,255,255,0.18)', 70);
-  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.9, maxHeight:h*0.64, maxFont:120, minFont:42, lineHeightRatio:1.12});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:'#00E5FF', shadow:'rgba(150,40,20,0.35)'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT2(ctx,w,h,title){ // Midnight neon dots
-  ctx.fillStyle = '#14142E'; ctx.fillRect(0,0,w,h);
-  const neon = ['#FF6BCB','#4D96FF','#FFD93D','#6BCB77'];
-  for(let i=0;i<50;i++){
-    const x = Math.random()*w, y = Math.random()*h, r = Math.random()*3+1.2;
-    ctx.globalAlpha = 0.65;
-    ctx.fillStyle = neon[i % neon.length];
-    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:104, minFont:40, lineHeightRatio:1.18});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', accentColor:'#FF6BCB', accentLastWordOnLastLine:true, numberColor:'#FFD93D'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT3(ctx,w,h,title){ // Pastel blobs
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,'#FFE9EF'); g.addColorStop(1,'#E7F5FF');
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  blob(ctx, w*0.22, h*0.16, 210, 'rgba(255,196,140,0.5)', 75);
-  blob(ctx, w*0.82, h*0.28, 180, 'rgba(178,255,214,0.55)', 75);
-  blob(ctx, w*0.28, h*0.86, 230, 'rgba(200,180,255,0.5)', 85);
-  const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:150, minFont:46, lineHeightRatio:1.04});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#4A2545', numberColor:'#FF3E7F'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT4(ctx,w,h,title){ // Halftone duotone
-  ctx.fillStyle = '#6C3483'; ctx.fillRect(0,0,w,h);
-  dotsPattern(ctx,w,h,'#FF6BCB',44,5,0.35);
-  const g2 = ctx.createRadialGradient(w/2,h*0.4,40,w/2,h*0.4,w*0.85);
-  g2.addColorStop(0,'rgba(108,52,131,0)');
-  g2.addColorStop(1,'rgba(45,18,62,0.6)');
-  ctx.fillStyle = g2; ctx.fillRect(0,0,w,h);
-  const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:100, minFont:38, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#ffffff', accentColor:'#FFD93D', accentLastWordOnLastLine:true, numberColor:'#6BCB77'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT5(ctx,w,h,title){ // Bold color block split
-  ctx.fillStyle = '#4D96FF'; ctx.fillRect(0,0,w,h);
-  ctx.fillStyle = '#FF6B6B';
-  ctx.beginPath();
-  ctx.moveTo(0,h);
-  ctx.lineTo(w,h*0.4);
-  ctx.lineTo(w,h);
-  ctx.closePath();
-  ctx.fill();
-  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'900', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.6, maxFont:106, minFont:40, lineHeightRatio:1.12});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.4, fontFamily:'Poppins', weight:'900', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:'#FFD93D'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT6(ctx,w,h,title){ // Minimal solid editorial card (clean Pinterest quote-card look)
-  const palette = getPalette(0);
-  ctx.fillStyle = palette.bg; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(26,26,w-52,h-52);
-  const fit = fitTitle(ctx, title, {fontFamily:'DM Serif Display', weight:'400', maxWidth:w*0.8, maxHeight:h*0.62, maxFont:110, minFont:40, lineHeightRatio:1.22});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'DM Serif Display', weight:'400', color:palette.text, numberColor:'#E24F4F'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT7(ctx,w,h,title){ // Vibrant mesh gradient
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,'#4D96FF'); g.addColorStop(0.35,'#845EC2'); g.addColorStop(0.7,'#FF6BCB'); g.addColorStop(1,'#FF9A5B');
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  blob(ctx, w*0.78, h*0.14, 200, 'rgba(255,255,255,0.18)', 85);
-  blob(ctx, w*0.2, h*0.82, 220, 'rgba(255,255,255,0.15)', 85);
-  const fit = fitTitle(ctx, title, {fontFamily:'Lobster', weight:'400', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:96, minFont:34, lineHeightRatio:1.28});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#ffffff', shadow:'rgba(0,0,0,0.3)', numberColor:'#FFD93D'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT8(ctx,w,h,title){ // Elegant italic statement card (soft solid background)
-  const palette = getPalette(3);
-  ctx.fillStyle = palette.bg; ctx.fillRect(0,0,w,h);
-  const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.86, maxHeight:h*0.6, maxFont:100, minFont:38, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:palette.text, numberColor:'#FF3E7F'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT9(ctx,w,h,title){ // Polka dot card
-  ctx.fillStyle = '#FFF3B0'; ctx.fillRect(0,0,w,h);
-  dotsPattern(ctx,w,h,'#ffffff',50,6,0.7);
-  const cardW = w*0.86, cardH = h*0.48;
-  const cardX = (w-cardW)/2, cardY = h*0.29;
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.15)';
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetY = 10;
-  ctx.fillStyle = '#ffffff';
-  roundRect(ctx, cardX, cardY, cardW, cardH, 40);
-  ctx.fill();
-  ctx.restore();
-  const fit = fitTitle(ctx, title, {fontFamily:'Caveat', weight:'700', maxWidth:cardW*0.88, maxHeight:cardH*0.82, maxFont:110, minFont:36, lineHeightRatio:1.14});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#FF3E7F', numberColor:'#4D96FF'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT10(ctx,w,h,title){ // Geometric triangles
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,'#0F6E5C'); g.addColorStop(1,'#0B4F73');
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  const shapeAlpha = ['rgba(255,255,255,0.11)','rgba(255,255,255,0.06)','rgba(255,255,255,0.16)'];
-  for(let i=0;i<26;i++){
-    const size = Math.random()*160+60;
-    const x = Math.random()*w, y = Math.random()*h;
-    ctx.fillStyle = shapeAlpha[i%shapeAlpha.length];
-    ctx.save();
-    ctx.translate(x,y);
-    ctx.rotate(Math.random()*Math.PI);
+  // decorative accents
+  if (design.accent === 'bar') {
+    ctx.fillStyle = design.colors[2];
+    ctx.fillRect(0, CANVAS_H - 24, CANVAS_W, 24);
+    ctx.fillRect(0, 0, CANVAS_W, 24);
+  } else if (design.accent === 'corner') {
+    ctx.fillStyle = design.colors[1];
     ctx.beginPath();
-    ctx.moveTo(0,-size/2);
-    ctx.lineTo(size/2, size/2);
-    ctx.lineTo(-size/2, size/2);
+    ctx.moveTo(CANVAS_W, 0);
+    ctx.lineTo(CANVAS_W, 140);
+    ctx.lineTo(CANVAS_W - 140, 0);
     ctx.closePath();
     ctx.fill();
-    ctx.restore();
+  } else if (design.accent === 'frame') {
+    ctx.strokeStyle = design.colors[2];
+    ctx.lineWidth = 18;
+    ctx.strokeRect(24, 24, CANVAS_W - 48, CANVAS_H - 48);
   }
-  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:106, minFont:40, lineHeightRatio:1.15});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Poppins', weight:'800', color:'#ffffff', numberColor:'#FF3E7F', shadow:'rgba(0,0,0,0.3)'});
-  drawWatermark(ctx,w,h);
-}
 
-function drawT11(ctx,w,h,title){ // Layered waves
-  const g = ctx.createLinearGradient(0,0,0,h);
-  g.addColorStop(0,'#1C6E8C'); g.addColorStop(1,'#0B3D5C');
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  const waveColors = ['rgba(255,255,255,0.12)','rgba(255,255,255,0.08)','rgba(255,255,255,0.16)'];
-  for(let wv=0; wv<3; wv++){
-    ctx.fillStyle = waveColors[wv%waveColors.length];
-    ctx.beginPath();
-    const baseY = h*0.62 + wv*95;
-    ctx.moveTo(0, baseY);
-    for(let x=0;x<=w;x+=50){
-      const y = baseY + Math.sin((x/w)*Math.PI*2 + wv) * 42;
-      ctx.lineTo(x,y);
-    }
-    ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
-  }
-  const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.48, maxFont:98, minFont:38, lineHeightRatio:1.16});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.3, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.3)'});
-  drawWatermark(ctx,w,h);
-}
+  const segments = splitBySpecialChars(title.toUpperCase());
+  const fit = fitText(ctx, segments, design.font, design.weight);
+  const { lines, scales, lineHeights, totalHeight } = fit;
 
-function drawT12(ctx,w,h,title){ // Duotone diagonal grain
-  ctx.fillStyle = '#FF3E7F'; ctx.fillRect(0,0,w,h);
-  ctx.fillStyle = '#FF9A2E';
-  ctx.beginPath();
-  ctx.moveTo(0,0); ctx.lineTo(w,0); ctx.lineTo(0,h*0.7); ctx.closePath(); ctx.fill();
-  for(let i=0;i<300;i++){
-    ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.06})`;
-    ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2);
-  }
-  const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:145, minFont:46, lineHeightRatio:1.04});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#00E5FF'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT13(ctx,w,h,title){ // Grunge poster
-  ctx.fillStyle = '#211D1D'; ctx.fillRect(0,0,w,h);
-  const vg = ctx.createRadialGradient(w/2,h/2,w*0.2,w/2,h/2,w*0.8);
-  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)');
-  ctx.fillStyle = vg; ctx.fillRect(0,0,w,h);
-  for(let i=0;i<150;i++){
-    ctx.strokeStyle = `rgba(255,255,255,${Math.random()*0.05})`;
-    ctx.beginPath();
-    const x = Math.random()*w;
-    ctx.moveTo(x, Math.random()*h);
-    ctx.lineTo(x + (Math.random()*40-20), Math.random()*h);
-    ctx.stroke();
-  }
-  const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:118, minFont:42, lineHeightRatio:1.1});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#F5F0E6', numberColor:'#FF6B6B', shadow:'rgba(0,0,0,0.5)'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT14(ctx,w,h,title){ // Bold two-tone gradient statement
-  const pair = getGradientPair(0);
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,pair[0]); g.addColorStop(1,pair[1]);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.62, maxFont:118, minFont:42, lineHeightRatio:1.08});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Anton', weight:'400', color:'#ffffff', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.25)'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT15(ctx,w,h,title){ // Bold typographic poster
-  ctx.fillStyle = '#7C2AE8'; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 10;
-  ctx.strokeRect(30,30,w-60,h-60);
-  const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.7, maxFont:170, minFont:50, lineHeightRatio:1.0});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.48, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#FFD93D'});
-  drawWatermark(ctx,w,h);
-}
-
-/* ---------------- 10 RARE COLOUR-COMBINATION GRADIENT DESIGNS (T16–T25) ---------------- */
-
-function drawT16(ctx,w,h,title){ // Terracotta → Sage, diagonal editorial
-  const [c1,c2] = RARE_GRADIENTS[0].stops;
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,c1); g.addColorStop(1,c2);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle = 'rgba(255,248,238,0.55)';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(34,34,w-68,h-68);
-  const fit = fitTitle(ctx, title, {fontFamily:'DM Serif Display', weight:'400', maxWidth:w*0.82, maxHeight:h*0.6, maxFont:104, minFont:38, lineHeightRatio:1.22});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'DM Serif Display', weight:'400', color:'#FFF8EE', numberColor:'#F3B79A', shadow:'rgba(0,0,0,0.2)'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT17(ctx,w,h,title){ // Dusty Mauve → Butter, soft radial boho
-  const [c1,c2] = RARE_GRADIENTS[1].stops;
-  const g = ctx.createRadialGradient(w*0.5,h*0.35,60,w*0.5,h*0.35,w*1.05);
-  g.addColorStop(0,c2); g.addColorStop(1,c1);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  blob(ctx, w*0.16, h*0.86, 200, 'rgba(255,255,255,0.16)', 80);
-  blob(ctx, w*0.88, h*0.12, 170, 'rgba(255,255,255,0.14)', 70);
-  const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.86, maxHeight:h*0.6, maxFont:100, minFont:38, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#3B2130', numberColor:'#8A3B4F'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT18(ctx,w,h,title){ // Deep Plum → Peach, glow statement
-  const [c1,c2] = RARE_GRADIENTS[2].stops;
-  const g = ctx.createLinearGradient(0,0,0,h);
-  g.addColorStop(0,c1); g.addColorStop(1,c2);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  blob(ctx, w*0.5, h*0.9, 260, 'rgba(255,255,255,0.14)', 100);
-  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:112, minFont:40, lineHeightRatio:1.14});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.44, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.28)', numberColor:'#F3B79A'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT19(ctx,w,h,title){ // Burnt Orange → Teal, colour-block split
-  const [c1,c2] = RARE_GRADIENTS[3].stops;
-  ctx.fillStyle = c1; ctx.fillRect(0,0,w,h);
-  ctx.fillStyle = c2;
-  ctx.beginPath();
-  ctx.moveTo(0,h*0.62); ctx.lineTo(w,h*0.38); ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
-  ctx.fill();
-  const fit = fitTitle(ctx, title, {fontFamily:'Anton', weight:'400', uppercase:true, maxWidth:w*0.88, maxHeight:h*0.56, maxFont:110, minFont:40, lineHeightRatio:1.1});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.34, fontFamily:'Anton', weight:'400', color:'#FFF3E6', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.25)'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT20(ctx,w,h,title){ // Olive → Blush, handwritten quote card
-  const [c1,c2] = RARE_GRADIENTS[4].stops;
-  ctx.fillStyle = c1; ctx.fillRect(0,0,w,h);
-  const cardW = w*0.86, cardH = h*0.48;
-  const cardX = (w-cardW)/2, cardY = h*0.29;
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.18)';
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetY = 10;
-  ctx.fillStyle = c2;
-  roundRect(ctx, cardX, cardY, cardW, cardH, 36);
-  ctx.fill();
-  ctx.restore();
-  const fit = fitTitle(ctx, title, {fontFamily:'Caveat', weight:'700', maxWidth:cardW*0.88, maxHeight:cardH*0.82, maxFont:112, minFont:36, lineHeightRatio:1.14});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:cardY+cardH/2, fontFamily:'Caveat', weight:'700', color:'#3F4A22', numberColor:'#A64B2A'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT21(ctx,w,h,title){ // Midnight → Rose Gold, sparkle statement
-  const [c1,c2] = RARE_GRADIENTS[5].stops;
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,c1); g.addColorStop(1,c2);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  for(let i=0;i<60;i++){
-    ctx.globalAlpha = Math.random()*0.5+0.1;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2);
-  }
-  ctx.globalAlpha = 1;
-  const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', maxWidth:w*0.88, maxHeight:h*0.62, maxFont:100, minFont:40, lineHeightRatio:1.16});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#ffffff', numberColor:'#E8B4A2'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT22(ctx,w,h,title){ // Rust → Powder Blue, arched shapes
-  const [c1,c2] = RARE_GRADIENTS[6].stops;
-  const g = ctx.createLinearGradient(0,h,0,0);
-  g.addColorStop(0,c1); g.addColorStop(1,c2);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  ctx.save();
-  ctx.globalAlpha = 0.16;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.arc(w/2, h*0.78, w*0.55, Math.PI, 0); ctx.fill();
-  ctx.restore();
-  const fit = fitTitle(ctx, title, {fontFamily:'Bebas Neue', weight:'400', uppercase:true, maxWidth:w*0.9, maxHeight:h*0.62, maxFont:150, minFont:46, lineHeightRatio:1.05});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.44, fontFamily:'Bebas Neue', weight:'400', color:'#ffffff', numberColor:'#FFD93D', shadow:'rgba(0,0,0,0.25)'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT23(ctx,w,h,title){ // Cocoa → Lavender, layered waves
-  const [c1,c2] = RARE_GRADIENTS[7].stops;
-  const g = ctx.createLinearGradient(0,0,0,h);
-  g.addColorStop(0,c1); g.addColorStop(1,c2);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  const waveColors = ['rgba(255,255,255,0.10)','rgba(255,255,255,0.16)'];
-  for(let wv=0; wv<2; wv++){
-    ctx.fillStyle = waveColors[wv%waveColors.length];
-    ctx.beginPath();
-    const baseY = h*0.68 + wv*80;
-    ctx.moveTo(0, baseY);
-    for(let x=0;x<=w;x+=50){
-      const y = baseY + Math.sin((x/w)*Math.PI*2 + wv) * 36;
-      ctx.lineTo(x,y);
-    }
-    ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
-  }
-  const fit = fitTitle(ctx, title, {fontFamily:'Playfair Display', weight:'700', style:'italic', maxWidth:w*0.86, maxHeight:h*0.5, maxFont:96, minFont:36, lineHeightRatio:1.24});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.32, fontFamily:'Playfair Display', weight:'700', style:'italic', color:'#FBF6F0', numberColor:'#C9B6E4', shadow:'rgba(0,0,0,0.25)'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT24(ctx,w,h,title){ // Forest → Salmon, dreamy blobs
-  const [c1,c2] = RARE_GRADIENTS[8].stops;
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,c1); g.addColorStop(1,c2);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  blob(ctx, w*0.2, h*0.14, 210, 'rgba(255,255,255,0.16)', 85);
-  blob(ctx, w*0.84, h*0.88, 240, 'rgba(255,255,255,0.14)', 90);
-  const fit = fitTitle(ctx, title, {fontFamily:'Lobster', weight:'400', maxWidth:w*0.88, maxHeight:h*0.6, maxFont:92, minFont:34, lineHeightRatio:1.28});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Lobster', weight:'400', color:'#FFF8F2', shadow:'rgba(0,0,0,0.3)', numberColor:'#F4978E'});
-  drawWatermark(ctx,w,h);
-}
-
-function drawT25(ctx,w,h,title){ // Charcoal → Champagne Gold, minimal luxe editorial
-  const [c1,c2] = RARE_GRADIENTS[9].stops;
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,c1); g.addColorStop(0.75,c1); g.addColorStop(1,c2);
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle = 'rgba(233,216,166,0.5)';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(40,40,w-80,h-80);
-  const fit = fitTitle(ctx, title, {fontFamily:'Montserrat', weight:'800', uppercase:true, maxWidth:w*0.82, maxHeight:h*0.58, maxFont:92, minFont:36, lineHeightRatio:1.2});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:'Montserrat', weight:'800', color:'#E9D8A6', numberColor:'#ffffff'});
-  drawWatermark(ctx,w,h);
-}
-
-/* ---------------- 31 SIMPLE UNIQUE-COLOUR SOLID BACKGROUND DESIGNS ---------------- */
-/* Each design uses one flat, unique background colour + its own font pairing.
-   A small rotating set of simple layout accents (frame / bar / corner glow / dots / dividers / underline)
-   keeps all 31 visually distinct even though the background is a single solid colour. */
-
-const SIMPLE_DESIGNS = [
-  {bg:'#F4A261', text:'#2B1B0E', accent:'#E76F51', font:'Poppins',           weight:'800'},
-  {bg:'#2E8B57', text:'#F4FFF8', accent:'#FFD93D', font:'Montserrat',       weight:'800'},
-  {bg:'#6FB8E0', text:'#0B2E4A', accent:'#FF6B6B', font:'DM Serif Display', weight:'400'},
-  {bg:'#7A1F2B', text:'#FDEDE7', accent:'#FFD93D', font:'Playfair Display', weight:'700', style:'italic'},
-  {bg:'#D9A441', text:'#2E2205', accent:'#1F6F6F', font:'Bebas Neue',       weight:'400', uppercase:true},
-  {bg:'#F2C6C2', text:'#5C1F3E', accent:'#7A1F2B', font:'Caveat',           weight:'700'},
-  {bg:'#4B5563', text:'#F5F5F5', accent:'#FF9A5B', font:'Poppins',         weight:'700'},
-  {bg:'#FCD5B5', text:'#7A3E1D', accent:'#2E8B57', font:'Lobster',        weight:'400'},
-  {bg:'#0F4C4C', text:'#EAFBF7', accent:'#FFD93D', font:'Montserrat',      weight:'800'},
-  {bg:'#C9B6E4', text:'#3B2560', accent:'#FF6BCB', font:'Dancing Script',  weight:'700'},
-  {bg:'#E63946', text:'#FFF3F0', accent:'#FFD93D', font:'Anton',          weight:'400', uppercase:true},
-  {bg:'#E8D7B0', text:'#3A2E10', accent:'#A64B2A', font:'DM Serif Display',weight:'400'},
-  {bg:'#3730A3', text:'#EAE9FF', accent:'#FFD93D', font:'Montserrat',      weight:'800'},
-  {bg:'#A8E6CF', text:'#14432A', accent:'#FF6B6B', font:'Poppins',        weight:'700'},
-  {bg:'#5C1A1A', text:'#FDEAE7', accent:'#F4A261', font:'Playfair Display',weight:'700', style:'italic'},
-  {bg:'#17A6A0', text:'#05261F', accent:'#FFD93D', font:'Bebas Neue',      weight:'400', uppercase:true},
-  {bg:'#C97C7C', text:'#3B1414', accent:'#F4E3B2', font:'Caveat',          weight:'700'},
-  {bg:'#1E293B', text:'#F1F5F9', accent:'#F4A261', font:'Montserrat',      weight:'800'},
-  {bg:'#F2C14E', text:'#3A2E05', accent:'#7A1F2B', font:'Anton',          weight:'400', uppercase:true},
-  {bg:'#9CAF88', text:'#1E2A15', accent:'#FF6BCB', font:'DM Serif Display',weight:'400'},
-  {bg:'#6B2D5C', text:'#FBE9F3', accent:'#FFD93D', font:'Playfair Display',weight:'700', style:'italic'},
-  {bg:'#C7F0DB', text:'#0F3D2E', accent:'#E63946', font:'Poppins',        weight:'800'},
-  {bg:'#B4432D', text:'#FFF3E6', accent:'#F4E3B2', font:'Bebas Neue',      weight:'400', uppercase:true},
-  {bg:'#7B8FE0', text:'#1B1E4A', accent:'#FFD93D', font:'Montserrat',      weight:'800'},
-  {bg:'#5C4A2E', text:'#F5EFE0', accent:'#E76F51', font:'DM Serif Display',weight:'400'},
-  {bg:'#D6448C', text:'#FFF3F8', accent:'#2E2205', font:'Lobster',        weight:'400'},
-  {bg:'#35618F', text:'#EAF3FB', accent:'#FFD93D', font:'Poppins',        weight:'700'},
-  {bg:'#F5EBDD', text:'#4A2E1D', accent:'#7A1F2B', font:'Caveat',          weight:'700'},
-  {bg:'#4B2E83', text:'#F0E9FF', accent:'#FFD93D', font:'Anton',          weight:'400', uppercase:true},
-  {bg:'#3B4A2E', text:'#EAF3DA', accent:'#F4A261', font:'Playfair Display',weight:'700', style:'italic'},
-  {bg:'#D8A7A0', text:'#3B1F1A', accent:'#1F6F6F', font:'DM Serif Display',weight:'400'}
-];
-
-function drawSimpleSolid(ctx,w,h,title,design,variant){
-  ctx.fillStyle = design.bg; ctx.fillRect(0,0,w,h);
-  switch(variant){
-    case 0: // thin inset frame
-      ctx.strokeStyle = hexA(design.text,0.2); ctx.lineWidth = 5;
-      ctx.strokeRect(30,30,w-60,h-60);
-      break;
-    case 1: // small top accent bar
-      ctx.fillStyle = design.accent; ctx.fillRect(w/2-60, h*0.16, 120, 10);
-      break;
-    case 2: // soft corner glow
-      blob(ctx, w*0.88, h*0.1, 150, hexA(design.accent,0.35), 65);
-      break;
-    case 3: // bottom colour strip
-      ctx.fillStyle = design.accent; ctx.fillRect(0, h*0.88, w, h*0.12);
-      break;
-    case 4: // faint corner dot grid
-      dotsPattern(ctx, w, h*0.3, design.accent, 42, 3, 0.22);
-      break;
-    case 5: // twin divider lines
-      ctx.strokeStyle = hexA(design.text,0.45); ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(w*0.32,h*0.26); ctx.lineTo(w*0.68,h*0.26); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(w*0.32,h*0.66); ctx.lineTo(w*0.68,h*0.66); ctx.stroke();
-      break;
-    case 6: // underline accent below title
-      ctx.fillStyle = design.accent; ctx.fillRect(w/2-70, h*0.63, 140, 8);
-      break;
-  }
-  const fit = fitTitle(ctx, title, {fontFamily:design.font, weight:design.weight, style:design.style, uppercase:design.uppercase||false, maxWidth:w*0.84, maxHeight:h*0.6, maxFont:100, minFont:38, lineHeightRatio:design.style==='italic'?1.24:1.18});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.46, fontFamily:design.font, weight:design.weight, style:design.style, color:design.text, numberColor:design.accent});
-  drawWatermark(ctx,w,h);
-}
-
-const PIN_TEMPLATES = [drawT1, drawT2, drawT3, drawT4, drawT5, drawT6, drawT9, drawT10, drawT11, drawT12, drawT13, drawT14, drawT15, drawT16, drawT18, drawT19, drawT20, drawT21, drawT22, drawT25];
-
-for(let i=0;i<SIMPLE_DESIGNS.length;i++){
-  PIN_TEMPLATES.push(((idx,variant) => (ctx,w,h,title) => drawSimpleSolid(ctx,w,h,title,SIMPLE_DESIGNS[idx],variant))(i, i % 7));
-}
-
-/* ---------------- FULL-BLEED VERTICAL STACK TEMPLATES (max text coverage, top to bottom) ---------------- */
-const VERTICAL_STACK_DESIGNS = [
-  {bg:'#2B2730', text:'#FFFFFF', accent:'#FF3E7F', font:'Poppins',   weight:'800'},  // charcoal, like the reference image
-  {bg:'#7A1F2B', text:'#FFF3F0', accent:'#FFD93D', font:'Montserrat',weight:'800'},  // deep red
-  {bg:'#0F4C4C', text:'#EAFBF7', accent:'#FFD93D', font:'Poppins',   weight:'800'},  // deep teal
-  {bg:'#1E293B', text:'#F1F5F9', accent:'#F4A261', font:'Montserrat',weight:'800'},  // slate navy
-  {bg:'#3B2560', text:'#F0E9FF', accent:'#FF6BCB', font:'Poppins',   weight:'800'}   // deep purple
-];
-
-function drawVerticalStack(ctx,w,h,title,design){
-  ctx.fillStyle = design.bg; ctx.fillRect(0,0,w,h);
-  const fit = fitTitleFullBleed(ctx, title, {
-    fontFamily: design.font, weight: design.weight,
-    maxWidth: w*0.90, maxHeight: h*0.92,
-    maxFont: 190, minFont: 40, lineHeightRatio: 1.05,
-    jitterMin: 0.72, jitterMax: 1.32
-  });
-  drawTitleFullBleed(ctx, fit, {
-    centerX: w/2, centerY: h/2,
-    fontFamily: design.font, weight: design.weight,
-    color: design.text, accentColor: design.accent, shadow: 'rgba(0,0,0,0.25)'
-  });
-  drawWatermark(ctx,w,h);
-}
-
-for(let i=0;i<VERTICAL_STACK_DESIGNS.length;i++){
-  PIN_TEMPLATES.push(((idx) => (ctx,w,h,title) => drawVerticalStack(ctx,w,h,title,VERTICAL_STACK_DESIGNS[idx]))(i));
-}
-
-/* ---------------- FACEBOOK STORY TEMPLATE (no watermark) ---------------- */
-function drawStory(ctx,w,h,title){
-  const g = ctx.createLinearGradient(0,0,w,h);
-  g.addColorStop(0,'#845EC2'); g.addColorStop(0.5,'#FF6BCB'); g.addColorStop(1,'#FF9A5B');
-  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  blob(ctx, w*0.2, h*0.14, 230, 'rgba(255,255,255,0.18)', 95);
-  blob(ctx, w*0.85, h*0.86, 270, 'rgba(255,255,255,0.15)', 95);
-
-  const fit = fitTitle(ctx, title, {fontFamily:'Poppins', weight:'800', maxWidth:w*0.86, maxHeight:h*0.44, maxFont:114, minFont:44, lineHeightRatio:1.18});
-  drawTitle(ctx, fit, {centerX:w/2, centerY:h*0.42, fontFamily:'Poppins', weight:'800', color:'#ffffff', shadow:'rgba(0,0,0,0.25)', numberColor:'#FFD93D'});
-
-  const ctaText = 'SWIPE UP';
-  ctx.font = '700 40px "Poppins"';
-  const ctaWidth = ctx.measureText('▲   ' + ctaText).width;
-  const pillW = ctaWidth + 90, pillH = 92;
-  const pillX = (w - pillW)/2, pillY = h - 260;
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.2)';
-  ctx.shadowBlur = 24;
-  ctx.shadowOffsetY = 6;
-  ctx.fillStyle = '#ffffff';
-  roundRect(ctx, pillX, pillY, pillW, pillH, pillH/2);
-  ctx.fill();
-  ctx.restore();
-  ctx.fillStyle = '#FF3E7F';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '700 40px "Poppins"';
-  ctx.fillText('▲   ' + ctaText, w/2, pillY + pillH/2 + 3);
+
+  const groupSize = Math.ceil(lines.length / 3) || 1;
+  const textAreaTop = PAD_Y;
+  const textAreaBottom = CANVAS_H - PAD_Y - WATERMARK_RESERVE;
+  const textAreaHeight = textAreaBottom - textAreaTop;
+  let runningTop = textAreaTop + (textAreaHeight - totalHeight) / 2;
+
+  lines.forEach((lineObj, i) => {
+    const groupIndex = Math.min(2, Math.floor(i / groupSize));
+    const fs = fit.fontSize * scales[i];
+    ctx.font = `${design.weight} ${fs}px ${design.font}`;
+    ctx.fillStyle = design.colors[groupIndex];
+    const centerY = runningTop + lineHeights[i] / 2;
+    ctx.fillText(lineObj.text, CANVAS_W / 2, centerY);
+    runningTop += lineHeights[i];
+  });
+
+  drawWatermark(ctx, design);
 }
 
-/* ---------------- FONT LOADING ---------------- */
-async function loadFonts(){
+function luminance(hex) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+function drawWatermark(ctx, design) {
+  const isLight = luminance(design.bg) > 150;
+  ctx.save();
+  ctx.font = '600 30px "Fredoka", Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = 0.75;
+  ctx.fillStyle = isLight ? '#333333' : '#ffffff';
+  ctx.fillText(WATERMARK_TEXT, CANVAS_W / 2, CANVAS_H - WATERMARK_RESERVE / 2);
+  ctx.restore();
+}
+
+async function waitForFonts() {
   const specs = [
-    '400 16px Poppins','600 16px Poppins','700 16px Poppins','800 16px Poppins','900 16px Poppins',
-    '700 16px Montserrat','800 16px Montserrat',
-    '400 16px "Bebas Neue"',
-    'italic 700 16px "Playfair Display"','700 16px "Playfair Display"',
-    '700 16px "Dancing Script"',
-    '400 16px Lobster',
-    '400 16px "DM Serif Display"',
-    '700 16px Caveat',
-    '400 16px Anton'
+    '800 100px "Baloo 2"',
+    '700 100px "Baloo 2"',
+    '400 100px "Anton"',
+    '400 100px "Archivo Black"',
+    '700 100px "Fredoka"',
+    '600 100px "Fredoka"',
+    '800 100px "Poppins"',
+    '800 100px "Montserrat"',
+    '800 100px "Rubik"',
+    '800 100px "Kanit"',
   ];
-  try{
-    await Promise.all(specs.map(f => document.fonts.load(f)));
-    await document.fonts.ready;
-  }catch(e){ /* fonts best-effort; continue anyway */ }
+  await Promise.all(specs.map(s => document.fonts.load(s)));
+  await document.fonts.ready;
 }
 
-/* ---------------- APP LOGIC ---------------- */
-const titleInput = document.getElementById('titleInput');
 const generateBtn = document.getElementById('generateBtn');
-const downloadZipBtn = document.getElementById('downloadZipBtn');
-const statusText = document.getElementById('statusText');
-const pinGrid = document.getElementById('pinGrid');
-const storyGrid = document.getElementById('storyGrid');
-const pinCount = document.getElementById('pinCount');
-const storyCount = document.getElementById('storyCount');
-const focusKeywordInput = document.getElementById('focusKeywordInput');
-const resetFocusBtn = document.getElementById('resetFocusBtn');
-const previewCanvas = document.getElementById('previewCanvas');
-const textSizeSlider = document.getElementById('textSizeSlider');
-const textSizeValue = document.getElementById('textSizeValue');
+const titleInput = document.getElementById('titleInput');
+const grid = document.getElementById('grid');
+const statusEl = document.getElementById('status');
+const zipBtn = document.getElementById('zipBtn');
 
-let currentZip = null;
-let currentSlug = 'pinterest-pins';
+let generatedCanvases = [];
 
-function slugify(str){
-  return str.toLowerCase().trim()
-    .replace(/[^a-z0-9\s-]/g,'')
-    .replace(/\s+/g,'-')
-    .slice(0,40) || 'pin';
-}
-
-function addCard(container, dataUrl, label, filename, isStory){
-  const card = document.createElement('div');
-  card.className = 'card' + (isStory ? ' story' : '');
-  const img = document.createElement('img');
-  img.src = dataUrl;
-  img.alt = label;
-  const meta = document.createElement('div');
-  meta.className = 'meta';
-  const span = document.createElement('span');
-  span.textContent = label;
-  const a = document.createElement('a');
-  a.textContent = 'Save';
-  a.href = dataUrl;
-  a.download = filename;
-  meta.appendChild(span);
-  meta.appendChild(a);
-  card.appendChild(img);
-  card.appendChild(meta);
-  container.appendChild(card);
-}
-
-function setLoading(isLoading){
-  generateBtn.disabled = isLoading;
-  generateBtn.innerHTML = isLoading ? '<span class="spinner"></span>Generate ho raha hai…' : `✨ ${PIN_TEMPLATES.length} Pins + Story Banao`;
-}
-
-async function generateAll(){
+generateBtn.addEventListener('click', async () => {
   const title = titleInput.value.trim();
-  if(!title){
-    statusText.textContent = 'Pehle apna blogpost ka title likhiye.';
-    titleInput.focus();
+  if (!title) {
+    statusEl.textContent = '⚠️ Pehle blog title likhein.';
     return;
   }
+  generateBtn.disabled = true;
+  statusEl.textContent = '⏳ Fonts load ho rahe hain aur images ban rahi hain...';
+  grid.innerHTML = '';
+  generatedCanvases = [];
+  zipBtn.style.display = 'none';
 
-  setLoading(true);
-  statusText.textContent = 'Fonts load ho rahe hain…';
-  pinGrid.innerHTML = '';
-  storyGrid.innerHTML = '';
-  pinCount.textContent = `0 / ${PIN_TEMPLATES.length}`;
-  storyCount.textContent = '0 / 1';
-  downloadZipBtn.disabled = true;
+  await waitForFonts();
 
-  await loadFonts();
+  DESIGNS.forEach((design, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
 
-  PIN_W = pinFormat === 'idea' ? 1080 : 1000;
-  PIN_H = pinFormat === 'idea' ? 1920 : 1500;
-
-  const zip = new JSZip();
-  const pinsFolder = zip.folder('pinterest-pins');
-  currentSlug = slugify(title);
-
-  for(let i=0;i<PIN_TEMPLATES.length;i++){
-    statusText.textContent = `Pin design ${i+1} / ${PIN_TEMPLATES.length} ban raha hai…`;
     const canvas = document.createElement('canvas');
-    canvas.width = PIN_W; canvas.height = PIN_H;
-    const ctx = canvas.getContext('2d');
-    PIN_TEMPLATES[i](ctx, PIN_W, PIN_H, title);
-    finishCanvas(ctx, PIN_W, PIN_H);
-    const dataUrl = canvas.toDataURL('image/png');
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-    const filename = `pin-design-${i+1}.png`;
-    pinsFolder.file(filename, blob);
-    addCard(pinGrid, dataUrl, `Design ${i+1}`, filename, false);
-    pinCount.textContent = `${i+1} / ${PIN_TEMPLATES.length}`;
-    await new Promise(r => setTimeout(r, 0)); // let UI paint
-  }
+    drawDesign(canvas, design, title);
+    card.appendChild(canvas);
 
-  statusText.textContent = 'Facebook Story image ban rahi hai…';
-  const storyCanvas = document.createElement('canvas');
-  storyCanvas.width = STORY_W; storyCanvas.height = STORY_H;
-  const sctx = storyCanvas.getContext('2d');
-  drawStory(sctx, STORY_W, STORY_H, title);
-  finishCanvas(sctx, STORY_W, STORY_H);
-  const storyDataUrl = storyCanvas.toDataURL('image/png');
-  const storyBlob = await new Promise(res => storyCanvas.toBlob(res, 'image/png'));
-  zip.folder('facebook-story').file('facebook-story.png', storyBlob);
-  addCard(storyGrid, storyDataUrl, 'Facebook Story', 'facebook-story.png', true);
-  storyCount.textContent = '1 / 1';
+    const foot = document.createElement('div');
+    foot.className = 'foot';
+    const label = document.createElement('span');
+    label.textContent = `Design ${idx + 1}`;
+    const dlBtn = document.createElement('button');
+    dlBtn.textContent = 'Download';
+    dlBtn.addEventListener('click', () => {
+      canvas.toBlob(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `blog-title-design-${idx + 1}.png`;
+        a.click();
+      });
+    });
+    foot.appendChild(label);
+    foot.appendChild(dlBtn);
+    card.appendChild(foot);
 
-  currentZip = zip;
-  downloadZipBtn.disabled = false;
-  statusText.textContent = 'Ho gaya! Ab "Sab ZIP mein Download" dabaiye ya har image individually save kariye.';
-  setLoading(false);
-}
+    grid.appendChild(card);
+    generatedCanvases.push({ canvas, name: `blog-title-design-${idx + 1}.png` });
+  });
 
-async function downloadZip(){
-  if(!currentZip) return;
-  downloadZipBtn.disabled = true;
-  downloadZipBtn.textContent = 'ZIP taiyaar ho raha hai…';
-  const blob = await currentZip.generateAsync({type:'blob'});
-  const url = URL.createObjectURL(blob);
+  statusEl.textContent = `✅ 56 designs taiyaar hain "${title}" ke liye.`;
+  zipBtn.style.display = 'inline-block';
+  generateBtn.disabled = false;
+});
+
+zipBtn.addEventListener('click', async () => {
+  zipBtn.disabled = true;
+  zipBtn.textContent = '⏳ ZIP taiyaar ho raha hai...';
+  const zip = new JSZip();
+
+  await Promise.all(generatedCanvases.map(({ canvas, name }) => {
+    return new Promise(resolve => {
+      canvas.toBlob(blob => {
+        zip.file(name, blob);
+        resolve();
+      });
+    });
+  }));
+
+  const content = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a');
-  a.href = url;
-  a.download = `${currentSlug}-images.zip`;
-  document.body.appendChild(a);
+  a.href = URL.createObjectURL(content);
+  a.download = 'blog-title-9-designs.zip';
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  downloadZipBtn.disabled = false;
-  downloadZipBtn.textContent = '⬇ Sab ZIP mein Download';
-}
 
-generateBtn.addEventListener('click', generateAll);
-downloadZipBtn.addEventListener('click', downloadZip);
+  zipBtn.disabled = false;
+  zipBtn.textContent = '⬇️ Sabhi 56 Images ZIP mein Download Karein';
+});
+
+// allow Enter+Ctrl to generate
 titleInput.addEventListener('keydown', (e) => {
-  if(e.key === 'Enter') generateAll();
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    generateBtn.click();
+  }
 });
-
-/* ---------------- LIVE PREVIEW + CONTRAST CHECK ---------------- */
-let previewFontsReady = false;
-let previewDebounce = null;
-async function renderPreview(){
-  const title = titleInput.value.trim() || "5 Signs He's Really Falling For You";
-  if(!previewFontsReady){ await loadFonts(); previewFontsReady = true; }
-  const pctx = previewCanvas.getContext('2d');
-  pctx.clearRect(0,0,previewCanvas.width,previewCanvas.height);
-  const w = previewCanvas.width, h = previewCanvas.height;
-  try{
-    PIN_TEMPLATES[0](pctx, w, h, title);
-    finishCanvas(pctx, w, h);
-  }catch(e){ /* preview is best-effort; ignore mid-type errors */ }
-}
-function schedulePreview(){
-  clearTimeout(previewDebounce);
-  previewDebounce = setTimeout(renderPreview, 220);
-}
-
-focusKeywordInput.addEventListener('input', (e) => {
-  focusKeyword = e.target.value;
-  schedulePreview();
-});
-
-resetFocusBtn.addEventListener('click', () => {
-  focusKeyword = '';
-  focusKeywordInput.value = '';
-  statusText.textContent = 'Focus Keyword clear ho gaya.';
-  schedulePreview();
-});
-
-titleInput.addEventListener('input', () => {
-  schedulePreview();
-});
-
-textSizeSlider.addEventListener('input', (e) => {
-  fontScale = Number(e.target.value) / 100;
-  textSizeValue.textContent = `${e.target.value}%`;
-  schedulePreview();
-});
-
-schedulePreview(); // render an initial preview with the placeholder title on page load
 </script>
 </body>
 </html>
