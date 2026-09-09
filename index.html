@@ -81,14 +81,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
-  .card .foot span { font-size: 0.8rem; color: #666; }
+  .card .foot span { font-size: 0.75rem; color: #666; white-space: nowrap; }
+  .card .foot .btn-group { display: flex; gap: 6px; }
   .card .foot button {
-    padding: 8px 14px;
-    font-size: 0.8rem;
+    padding: 8px 12px;
+    font-size: 0.78rem;
     background: #111827;
   }
+  .card .foot button.shuffle-btn { background: #7c3aed; }
+  .card .foot button.shuffle-btn:hover { background: #6d28d9; }
   .card .foot button:hover { background: #000; }
   .bottom-actions {
     margin-top: 26px;
@@ -105,18 +108,18 @@
 <body>
 <div class="wrap">
   <h1>📝 Blog Title Image Generator</h1>
-  <p class="sub">Blog title daaliye — 56 alag-alag bold chunky-font designs mein image ban jayengi. Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega, text hamesha center-aligned aur image ke andar fit rahega.</p>
+  <p class="sub">Blog title daaliye — 66 alag-alag bold chunky-font designs mein image ban jayengi (har image mein kam se kam 3 alag fonts + colors). Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega. Kisi bhi image ke design se khush nahi ho to uske "Shuffle" button se naya color+font pattern try karein.</p>
 
   <div class="controls">
     <textarea id="titleInput" placeholder="Apna blog title yahan likhein... e.g. Nice Guy Syndrome: The Hidden Psychology Behind It"></textarea>
-    <button id="generateBtn">🎨 56 Designs Banayein</button>
+    <button id="generateBtn">🎨 66 Designs Banayein</button>
   </div>
 
   <div id="status"></div>
   <div id="grid" class="grid"></div>
 
   <div class="bottom-actions">
-    <button id="zipBtn" class="secondary" style="display:none;">⬇️ Sabhi 56 Images ZIP mein Download Karein</button>
+    <button id="zipBtn" class="secondary" style="display:none;">⬇️ Sabhi 66 Images ZIP mein Download Karein</button>
   </div>
 </div>
 
@@ -127,17 +130,17 @@ const PAD_X = 70;
 const PAD_Y = 90;
 const MAX_FONT = 150;
 const MIN_FONT = 26;
-const WATERMARK_RESERVE = 60;
+const WATERMARK_RESERVE = 100;
 const MAX_LINE_SCALE = 1.3;
 const WATERMARK_TEXT = 'Relationship Cues';
 const SPECIAL_CHARS = [':','-','–','—','|',';','!','?',','];
 
-// ---- Building blocks used to generate 56 bold, varied templates ----
+// ---- Building blocks used to generate 66 bold, varied templates ----
 
-// Bold/black-weight display fonts only
+// Bold/black-weight display fonts only (Fredoka hata di gayi hai — baaki sabke saamne thin dikhti thi;
+// wo ab sirf watermark ke liye use hogi)
 const FONTS = [
   { family: '"Baloo 2"',       weight: 800 },
-  { family: '"Fredoka"',       weight: 700 },
   { family: '"Anton"',         weight: 400 }, // Anton is a black-weight display font by design
   { family: '"Archivo Black"', weight: 400 }, // Archivo Black is bold by design
   { family: '"Poppins"',       weight: 800 },
@@ -146,7 +149,13 @@ const FONTS = [
   { family: '"Kanit"',         weight: 800 },
 ];
 
-const ACCENTS = [null, 'bar', 'corner', 'frame'];
+// picks 3 distinct bold fonts for one design (deterministic per index, always varied)
+function getFontTrio(i) {
+  const n = FONTS.length;
+  return [FONTS[i % n], FONTS[(i + 2) % n], FONTS[(i + 4) % n]];
+}
+
+const ACCENTS = [null, 'bar', 'corner', 'frame', 'dots'];
 
 // Light backgrounds + dark/vivid 3-color palettes (readable on light bg)
 const LIGHT_BACKGROUNDS = ['#ffffff', '#fdf6e3', '#fbeee6', '#fff7d6', '#fdeaf3', '#eef3ff', '#f2f2f2'];
@@ -175,30 +184,30 @@ const DARK_PALETTES = [
 function buildDesigns() {
   const designs = [];
 
-  // 40 designs on light backgrounds
-  for (let i = 0; i < 40; i++) {
+  // 48 designs on light backgrounds
+  for (let i = 0; i < 48; i++) {
     const palette = LIGHT_PALETTES[i % LIGHT_PALETTES.length];
     const bg = LIGHT_BACKGROUNDS[i % LIGHT_BACKGROUNDS.length];
-    const font = FONTS[i % FONTS.length];
+    const fonts = getFontTrio(i);
     const accent = ACCENTS[i % ACCENTS.length];
     designs.push({
       name: `Design ${designs.length + 1}`,
       bg, colors: palette,
-      font: font.family, weight: font.weight,
+      fonts,
       accent
     });
   }
 
-  // 16 designs on dark backgrounds
-  for (let i = 0; i < 16; i++) {
+  // 18 designs on dark backgrounds
+  for (let i = 0; i < 18; i++) {
     const palette = DARK_PALETTES[i % DARK_PALETTES.length];
     const bg = DARK_BACKGROUNDS[i % DARK_BACKGROUNDS.length];
-    const font = FONTS[(i + 3) % FONTS.length];
+    const fonts = getFontTrio(i + 3);
     const accent = ACCENTS[(i + 1) % ACCENTS.length];
     designs.push({
       name: `Design ${designs.length + 1}`,
       bg, colors: palette,
-      font: font.family, weight: font.weight,
+      fonts,
       accent
     });
   }
@@ -206,7 +215,7 @@ function buildDesigns() {
   return designs;
 }
 
-// 56 total design templates
+// 66 total design templates
 const DESIGNS = buildDesigns();
 
 function splitBySpecialChars(title) {
@@ -222,6 +231,26 @@ function splitBySpecialChars(title) {
   }
   if (current.trim()) segments.push(current.trim());
   return segments.length ? segments : [title.trim()];
+}
+
+// Splits the title into style-groups (each will get its own font + color).
+// If the title has 3+ punctuation clauses (":", "-", "|" etc.), each clause is its own group.
+// Otherwise the words are divided into up to 3 equal chunks, so every title still
+// gets at least 3 distinct fonts/colors even with no punctuation at all.
+function buildStyleSegments(title) {
+  const punctSegments = splitBySpecialChars(title);
+  if (punctSegments.length >= 3) {
+    return punctSegments.map((text, i) => ({ text, group: i % 3 }));
+  }
+  const words = title.trim().split(/\s+/).filter(Boolean);
+  const groupCount = Math.min(3, words.length) || 1;
+  const chunkSize = Math.ceil(words.length / groupCount);
+  const segs = [];
+  for (let g = 0; g < groupCount; g++) {
+    const chunkWords = words.slice(g * chunkSize, (g + 1) * chunkSize);
+    if (chunkWords.length) segs.push({ text: chunkWords.join(' '), group: g });
+  }
+  return segs;
 }
 
 function wrapSegment(ctx, text, maxWidth) {
@@ -247,25 +276,29 @@ function wrapSegment(ctx, text, maxWidth) {
   return lines;
 }
 
-function buildLinesForFont(ctx, segments, fontFamily, weight, fontSize, maxWidth) {
-  ctx.font = `${weight} ${fontSize}px ${fontFamily}`;
+function buildLinesForDesign(ctx, styleSegments, design, fontSize, maxWidth) {
   const lines = [];
-  segments.forEach((seg, segIndex) => {
-    const subLines = wrapSegment(ctx, seg, maxWidth);
-    subLines.forEach(sl => lines.push({ text: sl, segIndex }));
+  styleSegments.forEach(seg => {
+    const font = design.fonts[seg.group % design.fonts.length];
+    ctx.font = `${font.weight} ${fontSize}px ${font.family}`;
+    const subLines = wrapSegment(ctx, seg.text, maxWidth);
+    subLines.forEach(sl => lines.push({ text: sl, group: seg.group }));
   });
   return lines;
 }
 
-function fitText(ctx, segments, fontFamily, weight) {
+function fitText(ctx, styleSegments, design) {
   const maxWidth = CANVAS_W - PAD_X * 2;
   const availableHeight = CANVAS_H - PAD_Y * 2 - WATERMARK_RESERVE;
   let chosen = null;
 
   for (let fs = MAX_FONT; fs >= MIN_FONT; fs -= 2) {
-    const lines = buildLinesForFont(ctx, segments, fontFamily, weight, fs, maxWidth);
-    ctx.font = `${weight} ${fs}px ${fontFamily}`;
-    const widths = lines.map(l => ctx.measureText(l.text).width);
+    const lines = buildLinesForDesign(ctx, styleSegments, design, fs, maxWidth);
+    const widths = lines.map(l => {
+      const font = design.fonts[l.group % design.fonts.length];
+      ctx.font = `${font.weight} ${fs}px ${font.family}`;
+      return ctx.measureText(l.text).width;
+    });
 
     // reject this size if any line's raw width already exceeds canvas width
     if (widths.some(w => w > maxWidth + 0.5)) continue;
@@ -284,7 +317,7 @@ function fitText(ctx, segments, fontFamily, weight) {
 
   if (!chosen) {
     // safety fallback: smallest font, no stretching, guaranteed to fit width
-    const lines = buildLinesForFont(ctx, segments, fontFamily, weight, MIN_FONT, maxWidth);
+    const lines = buildLinesForDesign(ctx, styleSegments, design, MIN_FONT, maxWidth);
     const lineHeights = lines.map(() => MIN_FONT * 1.18);
     chosen = {
       fontSize: MIN_FONT,
@@ -297,14 +330,91 @@ function fitText(ctx, segments, fontFamily, weight) {
   return chosen;
 }
 
-function drawDesign(canvas, design, title) {
+// ---- Pinterest-friendly background helpers ----
+
+// deterministic pseudo-random generator (same design index = same look every time)
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hexToRgba(hex, alpha) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// one shared grain tile reused across all 66 canvases (fast + consistent texture)
+let _noiseTile = null;
+function getNoiseTile() {
+  if (_noiseTile) return _noiseTile;
+  const size = 200;
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const cctx = c.getContext('2d');
+  const imgData = cctx.createImageData(size, size);
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    const v = 128 + (Math.random() * 70 - 35);
+    imgData.data[i] = v; imgData.data[i + 1] = v; imgData.data[i + 2] = v;
+    imgData.data[i + 3] = 255;
+  }
+  cctx.putImageData(imgData, 0, 0);
+  _noiseTile = c;
+  return c;
+}
+
+// soft color blobs + subtle grain -> gives a "designed" Pinterest-style background
+// instead of a flat solid color, while text stays fully readable.
+function drawBackground(ctx, design, seed) {
+  ctx.fillStyle = design.bg;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  const rand = mulberry32(seed + 1);
+  const blobColors = [design.colors[0], design.colors[2] || design.colors[0]];
+  blobColors.forEach((color, i) => {
+    const cx = CANVAS_W * (0.15 + rand() * 0.7);
+    const cy = CANVAS_H * (0.12 + rand() * 0.7);
+    const r = CANVAS_W * (0.4 + rand() * 0.3);
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0, hexToRgba(color, i === 0 ? 0.14 : 0.10));
+    grad.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  });
+
+  // subtle grain overlay for a premium, non-flat print-like feel
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.globalAlpha = 0.07;
+  const pattern = ctx.createPattern(getNoiseTile(), 'repeat');
+  ctx.fillStyle = pattern;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.restore();
+}
+
+function drawDesign(canvas, design, title, seed) {
   const ctx = canvas.getContext('2d');
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
 
-  // background
-  ctx.fillStyle = design.bg;
-  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  // background — soft color blobs + subtle grain instead of flat fill
+  drawBackground(ctx, design, seed || 0);
 
   // decorative accents
   if (design.accent === 'bar') {
@@ -323,26 +433,42 @@ function drawDesign(canvas, design, title) {
     ctx.strokeStyle = design.colors[2];
     ctx.lineWidth = 18;
     ctx.strokeRect(24, 24, CANVAS_W - 48, CANVAS_H - 48);
+  } else if (design.accent === 'dots') {
+    const rand = mulberry32(seed + 99);
+    const corner = rand() > 0.5 ? 'tr' : 'bl';
+    const cols = 6, rows = 6, spacing = 26, dotR = 5;
+    const originX = corner === 'tr' ? CANVAS_W - 60 - cols * spacing : 60;
+    const originY = corner === 'tr' ? 60 : CANVAS_H - 60 - rows * spacing;
+    ctx.fillStyle = hexToRgba(design.colors[2], 0.5);
+    for (let row = 0; row < rows; row++) {
+      for (let colI = 0; colI < cols; colI++) {
+        if ((row + colI) % 2 === 0) continue; // checkerboard spacing, less dense
+        ctx.beginPath();
+        ctx.arc(originX + colI * spacing, originY + row * spacing, dotR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
 
-  const segments = splitBySpecialChars(title.toUpperCase());
-  const fit = fitText(ctx, segments, design.font, design.weight);
+  const styleSegments = buildStyleSegments(title.toUpperCase());
+  const fit = fitText(ctx, styleSegments, design);
   const { lines, scales, lineHeights, totalHeight } = fit;
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const groupSize = Math.ceil(lines.length / 3) || 1;
   const textAreaTop = PAD_Y;
   const textAreaBottom = CANVAS_H - PAD_Y - WATERMARK_RESERVE;
   const textAreaHeight = textAreaBottom - textAreaTop;
   let runningTop = textAreaTop + (textAreaHeight - totalHeight) / 2;
 
+  // Each style-group has its own font + its own tied color, so every image
+  // shows at least 3 distinct bold fonts, each with a consistent, matching color.
   lines.forEach((lineObj, i) => {
-    const groupIndex = Math.min(2, Math.floor(i / groupSize));
+    const groupFont = design.fonts[lineObj.group % design.fonts.length];
     const fs = fit.fontSize * scales[i];
-    ctx.font = `${design.weight} ${fs}px ${design.font}`;
-    ctx.fillStyle = design.colors[groupIndex];
+    ctx.font = `${groupFont.weight} ${fs}px ${groupFont.family}`;
+    ctx.fillStyle = design.colors[lineObj.group % design.colors.length];
     const centerY = runningTop + lineHeights[i] / 2;
     ctx.fillText(lineObj.text, CANVAS_W / 2, centerY);
     runningTop += lineHeights[i];
@@ -361,23 +487,33 @@ function luminance(hex) {
 
 function drawWatermark(ctx, design) {
   const isLight = luminance(design.bg) > 150;
+  const y = CANVAS_H - 60; // lifted up from the very bottom edge for cleaner branding
+
   ctx.save();
   ctx.font = '600 30px "Fredoka", Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.globalAlpha = 0.75;
+
+  const textWidth = ctx.measureText(WATERMARK_TEXT).width;
+  const pillW = textWidth + 56;
+  const pillH = 48;
+
+  // soft pill behind the watermark so it reads as a brand badge, not stray text
+  ctx.fillStyle = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.14)';
+  roundRect(ctx, CANVAS_W / 2 - pillW / 2, y - pillH / 2, pillW, pillH, pillH / 2);
+  ctx.fill();
+
+  ctx.globalAlpha = 0.85;
   ctx.fillStyle = isLight ? '#333333' : '#ffffff';
-  ctx.fillText(WATERMARK_TEXT, CANVAS_W / 2, CANVAS_H - WATERMARK_RESERVE / 2);
+  ctx.fillText(WATERMARK_TEXT, CANVAS_W / 2, y);
   ctx.restore();
 }
 
 async function waitForFonts() {
   const specs = [
     '800 100px "Baloo 2"',
-    '700 100px "Baloo 2"',
     '400 100px "Anton"',
     '400 100px "Archivo Black"',
-    '700 100px "Fredoka"',
     '600 100px "Fredoka"',
     '800 100px "Poppins"',
     '800 100px "Montserrat"',
@@ -415,13 +551,32 @@ generateBtn.addEventListener('click', async () => {
     card.className = 'card';
 
     const canvas = document.createElement('canvas');
-    drawDesign(canvas, design, title);
+    let currentDesignIndex = idx;
+    drawDesign(canvas, DESIGNS[currentDesignIndex], title, currentDesignIndex);
     card.appendChild(canvas);
 
     const foot = document.createElement('div');
     foot.className = 'foot';
     const label = document.createElement('span');
     label.textContent = `Design ${idx + 1}`;
+
+    const btnGroup = document.createElement('div');
+    btnGroup.className = 'btn-group';
+
+    const shuffleBtn = document.createElement('button');
+    shuffleBtn.className = 'shuffle-btn';
+    shuffleBtn.textContent = '🔀 Shuffle';
+    shuffleBtn.addEventListener('click', () => {
+      let nextIndex = currentDesignIndex;
+      if (DESIGNS.length > 1) {
+        do {
+          nextIndex = Math.floor(Math.random() * DESIGNS.length);
+        } while (nextIndex === currentDesignIndex);
+      }
+      currentDesignIndex = nextIndex;
+      drawDesign(canvas, DESIGNS[currentDesignIndex], title, currentDesignIndex);
+    });
+
     const dlBtn = document.createElement('button');
     dlBtn.textContent = 'Download';
     dlBtn.addEventListener('click', () => {
@@ -432,15 +587,18 @@ generateBtn.addEventListener('click', async () => {
         a.click();
       });
     });
+
+    btnGroup.appendChild(shuffleBtn);
+    btnGroup.appendChild(dlBtn);
     foot.appendChild(label);
-    foot.appendChild(dlBtn);
+    foot.appendChild(btnGroup);
     card.appendChild(foot);
 
     grid.appendChild(card);
     generatedCanvases.push({ canvas, name: `blog-title-design-${idx + 1}.png` });
   });
 
-  statusEl.textContent = `✅ 56 designs taiyaar hain "${title}" ke liye.`;
+  statusEl.textContent = `✅ 66 designs taiyaar hain "${title}" ke liye.`;
   zipBtn.style.display = 'inline-block';
   generateBtn.disabled = false;
 });
@@ -462,11 +620,11 @@ zipBtn.addEventListener('click', async () => {
   const content = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(content);
-  a.download = 'blog-title-9-designs.zip';
+  a.download = 'blog-title-66-designs.zip';
   a.click();
 
   zipBtn.disabled = false;
-  zipBtn.textContent = '⬇️ Sabhi 56 Images ZIP mein Download Karein';
+  zipBtn.textContent = '⬇️ Sabhi 66 Images ZIP mein Download Karein';
 });
 
 // allow Enter+Ctrl to generate
