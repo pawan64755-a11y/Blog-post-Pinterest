@@ -93,6 +93,42 @@
   .card .foot button.shuffle-btn { background: #7c3aed; }
   .card .foot button.shuffle-btn:hover { background: #6d28d9; }
   .card .foot button:hover { background: #000; }
+  .card .foot.top { padding: 8px 10px; justify-content: center; }
+  .card .foot.top .btn-group { width: 100%; }
+  .card .foot.top button { flex: 1 1 0; padding: 8px 6px; font-size: 0.72rem; }
+  .card .cat-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #555;
+    background: #eef0f4;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 22px;
+  }
+  .filter-bar button {
+    background: #fff;
+    color: #333;
+    border: 1.5px solid #ddd;
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .filter-bar button:hover { background: #f0f0f0; }
+  .filter-bar button.active {
+    background: #111827;
+    color: #fff;
+    border-color: #111827;
+  }
+  .card.hidden { display: none; }
   .bottom-actions {
     margin-top: 26px;
     display: flex;
@@ -108,18 +144,19 @@
 <body>
 <div class="wrap">
   <h1>📝 Blog Title Image Generator</h1>
-  <p class="sub">Blog title daaliye — 66 alag-alag bold chunky-font designs mein image ban jayengi (har image mein kam se kam 3 alag fonts + colors). Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega. Kisi bhi image ke design se khush nahi ho to uske "Shuffle" button se naya color+font pattern try karein.</p>
+  <p class="sub">Blog title daaliye — bold chunky-font designs mein image ban jayengi, jisme Original bold styles ke saath Abstract &amp; 3D Geometric, Nature &amp; Golden Hour, Dark Mode &amp; Neon, Blurred Reality / Bokeh aur Aesthetic &amp; Lo-Fi backgrounds bhi shaamil hain. Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega. Neeche filter buttons se background style ke hisaab se sort karein, aur kisi bhi image se khush nahi ho to uske "Shuffle" button se naya pattern try karein.</p>
 
   <div class="controls">
     <textarea id="titleInput" placeholder="Apna blog title yahan likhein... e.g. Nice Guy Syndrome: The Hidden Psychology Behind It"></textarea>
-    <button id="generateBtn">🎨 66 Designs Banayein</button>
+    <button id="generateBtn">🎨 Sabhi Designs Banayein</button>
   </div>
 
   <div id="status"></div>
+  <div id="filterBar" class="filter-bar" style="display:none;"></div>
   <div id="grid" class="grid"></div>
 
   <div class="bottom-actions">
-    <button id="zipBtn" class="secondary" style="display:none;">⬇️ Sabhi 66 Images ZIP mein Download Karein</button>
+    <button id="zipBtn" class="secondary" style="display:none;">⬇️ Sabhi Images ZIP mein Download Karein</button>
   </div>
 </div>
 
@@ -181,10 +218,21 @@ const DARK_PALETTES = [
   ['#fbbf24', '#f472b6', '#38bdf8'], // amber / pink / sky blue
 ];
 
+// ---- Background style categories (used for the filter bar) ----
+const CATEGORIES = [
+  { id: 'all',      label: '✨ Sabhi' },
+  { id: 'original', label: '🎨 Original Bold' },
+  { id: 'geo3d',    label: '🔺 Abstract & 3D Geometric' },
+  { id: 'nature',   label: '🌄 Nature & Golden Hour' },
+  { id: 'neon',     label: '🌃 Dark Mode & Neon' },
+  { id: 'bokeh',    label: '💡 Blurred Reality / Bokeh' },
+  { id: 'lofi',     label: '📼 Aesthetic & Lo-Fi' },
+];
+
 function buildDesigns() {
   const designs = [];
 
-  // 48 designs on light backgrounds
+  // 48 designs on light backgrounds (Original Bold category)
   for (let i = 0; i < 48; i++) {
     const palette = LIGHT_PALETTES[i % LIGHT_PALETTES.length];
     const bg = LIGHT_BACKGROUNDS[i % LIGHT_BACKGROUNDS.length];
@@ -194,11 +242,13 @@ function buildDesigns() {
       name: `Design ${designs.length + 1}`,
       bg, colors: palette,
       fonts,
-      accent
+      accent,
+      category: 'original',
+      bgType: 'classic'
     });
   }
 
-  // 18 designs on dark backgrounds
+  // 18 designs on dark backgrounds (Original Bold category)
   for (let i = 0; i < 18; i++) {
     const palette = DARK_PALETTES[i % DARK_PALETTES.length];
     const bg = DARK_BACKGROUNDS[i % DARK_BACKGROUNDS.length];
@@ -208,15 +258,113 @@ function buildDesigns() {
       name: `Design ${designs.length + 1}`,
       bg, colors: palette,
       fonts,
-      accent
+      accent,
+      category: 'original',
+      bgType: 'classic'
     });
   }
 
   return designs;
 }
 
-// 66 total design templates
-const DESIGNS = buildDesigns();
+// ---- New background style categories ----
+
+function buildGeo3DDesigns() {
+  const combos = [
+    { bg: '#f5f2ea', colors: ['#ff6b35', '#1a1a2e', '#00b4d8'] },
+    { bg: '#eef1f8', colors: ['#5b3fd6', '#161616', '#ff9f1c'] },
+    { bg: '#fff7ec', colors: ['#e63946', '#1d3557', '#2a9d8f'] },
+    { bg: '#12131a', colors: ['#00f5d4', '#ffffff', '#f15bb5'] },
+    { bg: '#161221', colors: ['#ffd60a', '#ffffff', '#ff5d8f'] },
+    { bg: '#0d1321', colors: ['#3ec1ff', '#ffffff', '#ff7b54'] },
+  ];
+  return combos.map((c, i) => ({
+    name: '', bg: c.bg, colors: c.colors,
+    fonts: getFontTrio(i + 1),
+    accent: ACCENTS[i % ACCENTS.length],
+    category: 'geo3d', bgType: 'geo3d'
+  }));
+}
+
+function buildNatureDesigns() {
+  const combos = [
+    { bg: '#fff3dd', colors: ['#c1440e', '#2d3319', '#e07a5f'] },
+    { bg: '#fef0e6', colors: ['#bc6c25', '#283618', '#dda15e'] },
+    { bg: '#fdebd8', colors: ['#9c3d1f', '#1b2a1b', '#f4a261'] },
+    { bg: '#3a2a1d', colors: ['#ffb347', '#ffffff', '#e76f51'] },
+    { bg: '#2b1d14', colors: ['#f4a261', '#fff3dd', '#e9c46a'] },
+    { bg: '#33220f', colors: ['#ffd166', '#ffffff', '#ef8354'] },
+  ];
+  return combos.map((c, i) => ({
+    name: '', bg: c.bg, colors: c.colors,
+    fonts: getFontTrio(i + 2),
+    accent: ACCENTS[(i + 2) % ACCENTS.length],
+    category: 'nature', bgType: 'nature'
+  }));
+}
+
+function buildNeonDesigns() {
+  const combos = [
+    { bg: '#0a0014', colors: ['#ff00e5', '#00fff9', '#ffffff'] },
+    { bg: '#05070f', colors: ['#39ff14', '#ff00e5', '#ffffff'] },
+    { bg: '#0c0620', colors: ['#00e5ff', '#ff4dd8', '#ffffff'] },
+    { bg: '#08040f', colors: ['#ffe600', '#ff2079', '#00e5ff'] },
+    { bg: '#020a10', colors: ['#00ffa3', '#ff00e5', '#ffffff'] },
+    { bg: '#0b0014', colors: ['#7dff00', '#00d1ff', '#ffffff'] },
+  ];
+  return combos.map((c, i) => ({
+    name: '', bg: c.bg, colors: c.colors,
+    fonts: getFontTrio(i + 3),
+    accent: null,
+    category: 'neon', bgType: 'neon'
+  }));
+}
+
+function buildBokehDesigns() {
+  const combos = [
+    { bg: '#fdf4ec', colors: ['#e07a5f', '#3d405b', '#f2cc8f'] },
+    { bg: '#eef2fb', colors: ['#3d5a80', '#293241', '#ee6c4d'] },
+    { bg: '#fbeef0', colors: ['#c9184a', '#4a1942', '#ff8fa3'] },
+    { bg: '#12141f', colors: ['#ffd166', '#ffffff', '#06d6a0'] },
+    { bg: '#161327', colors: ['#f72585', '#ffffff', '#4cc9f0'] },
+    { bg: '#0e1420', colors: ['#ffb703', '#ffffff', '#8ecae6'] },
+  ];
+  return combos.map((c, i) => ({
+    name: '', bg: c.bg, colors: c.colors,
+    fonts: getFontTrio(i + 4),
+    accent: null,
+    category: 'bokeh', bgType: 'bokeh'
+  }));
+}
+
+function buildLofiDesigns() {
+  const combos = [
+    { bg: '#e9e1d3', colors: ['#7d5a50', '#2f2f2f', '#b56576'] },
+    { bg: '#e3dcd0', colors: ['#6d6875', '#2f2f2f', '#e5989b'] },
+    { bg: '#f1e5d1', colors: ['#8a5a44', '#33261d', '#c98474'] },
+    { bg: '#2b2320', colors: ['#e8c07d', '#f4ede4', '#b56576'] },
+    { bg: '#26211d', colors: ['#e0a458', '#f4ede4', '#8a5a44'] },
+    { bg: '#30281f', colors: ['#dbb68e', '#f4ede4', '#b08968'] },
+  ];
+  return combos.map((c, i) => ({
+    name: '', bg: c.bg, colors: c.colors,
+    fonts: getFontTrio(i + 5),
+    accent: ACCENTS[(i + 3) % ACCENTS.length],
+    category: 'lofi', bgType: 'lofi'
+  }));
+}
+
+// All design templates: existing bold designs + 5 new background style categories
+const DESIGNS = [
+  ...buildDesigns(),
+  ...buildGeo3DDesigns(),
+  ...buildNatureDesigns(),
+  ...buildNeonDesigns(),
+  ...buildBokehDesigns(),
+  ...buildLofiDesigns(),
+];
+DESIGNS.forEach((d, i) => { d.name = `Design ${i + 1}`; });
+const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
 
 function splitBySpecialChars(title) {
   const segments = [];
@@ -379,9 +527,9 @@ function getNoiseTile() {
   return c;
 }
 
-// soft color blobs + subtle grain -> gives a "designed" Pinterest-style background
+// soft color blobs -> gives a "designed" Pinterest-style background
 // instead of a flat solid color, while text stays fully readable.
-function drawBackground(ctx, design, seed) {
+function drawClassicBackground(ctx, design, seed) {
   ctx.fillStyle = design.bg;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
@@ -397,11 +545,207 @@ function drawBackground(ctx, design, seed) {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   });
+}
+
+// Abstract & 3D Geometric Shapes — overlapping rotated polygons with gradient shading
+function drawGeo3DBackground(ctx, design, seed) {
+  ctx.fillStyle = design.bg;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  const rand = mulberry32(seed + 11);
+  const shapeColors = [design.colors[0], design.colors[2] || design.colors[0], design.colors[1]];
+
+  for (let s = 0; s < 6; s++) {
+    const color = shapeColors[s % shapeColors.length];
+    const cx = CANVAS_W * rand();
+    const cy = CANVAS_H * rand();
+    const size = CANVAS_W * (0.18 + rand() * 0.22);
+    const sides = 3 + Math.floor(rand() * 4); // triangle to hexagon
+    const rotation = rand() * Math.PI * 2;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+    const grad = ctx.createLinearGradient(-size, -size, size, size);
+    grad.addColorStop(0, hexToRgba(color, 0.16));
+    grad.addColorStop(1, hexToRgba(color, 0.03));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    for (let p = 0; p < sides; p++) {
+      const angle = (p / sides) * Math.PI * 2;
+      const px = Math.cos(angle) * size;
+      const py = Math.sin(angle) * size;
+      if (p === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    // thin bevel-style edge for a subtle 3D pop
+    ctx.strokeStyle = hexToRgba(color, 0.22);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// Nature & Golden Hour — warm vertical sky gradient + soft sun glow + hill silhouettes
+function drawNatureBackground(ctx, design, seed) {
+  const isDark = luminance(design.bg) < 150;
+  const skyTop = isDark ? '#1a120a' : '#fff3dd';
+  const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+  grad.addColorStop(0, skyTop);
+  grad.addColorStop(1, design.bg);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // soft "sun" glow
+  const rand = mulberry32(seed + 21);
+  const sunX = CANVAS_W * (0.3 + rand() * 0.4);
+  const sunY = CANVAS_H * (0.28 + rand() * 0.12);
+  const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, CANVAS_W * 0.55);
+  sunGrad.addColorStop(0, hexToRgba(design.colors[2] || design.colors[0], 0.35));
+  sunGrad.addColorStop(1, hexToRgba(design.colors[2] || design.colors[0], 0));
+  ctx.fillStyle = sunGrad;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // layered hill silhouettes near the bottom
+  const hillColors = [hexToRgba(design.colors[1], 0.5), hexToRgba(design.colors[1], 0.75)];
+  hillColors.forEach((color, i) => {
+    const baseY = CANVAS_H * (0.8 + i * 0.08);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, CANVAS_H);
+    ctx.lineTo(0, baseY + 40);
+    for (let x = 0; x <= CANVAS_W; x += 100) {
+      const y = baseY + Math.sin((x / CANVAS_W) * Math.PI * 2 + i + seed) * 30;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(CANVAS_W, CANVAS_H);
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+
+// Dark Mode & Neon — dark bg + glowing perspective grid + neon rings
+function drawNeonBackground(ctx, design, seed) {
+  ctx.fillStyle = design.bg;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  const rand = mulberry32(seed + 31);
+  const neonA = design.colors[0];
+  const neonB = design.colors[1];
+
+  // faint retro horizon grid
+  ctx.save();
+  ctx.strokeStyle = hexToRgba(neonA, 0.18);
+  ctx.lineWidth = 2;
+  const horizonY = CANVAS_H * 0.72;
+  for (let i = 0; i <= 10; i++) {
+    const x = (CANVAS_W / 10) * i;
+    ctx.beginPath();
+    ctx.moveTo(CANVAS_W / 2, horizonY);
+    ctx.lineTo(x, CANVAS_H);
+    ctx.stroke();
+  }
+  for (let i = 1; i <= 5; i++) {
+    const y = horizonY + (CANVAS_H - horizonY) * (i / 5) * (i / 5);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(CANVAS_W, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // glowing neon rings scattered around
+  for (let i = 0; i < 4; i++) {
+    const color = i % 2 === 0 ? neonA : neonB;
+    const cx = CANVAS_W * rand();
+    const cy = CANVAS_H * 0.35 * rand();
+    const r = 40 + rand() * 90;
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 40;
+    ctx.strokeStyle = hexToRgba(color, 0.7);
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// Blurred Reality / Bokeh Effect — soft overlapping out-of-focus light circles
+function drawBokehBackground(ctx, design, seed) {
+  const grad = ctx.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
+  grad.addColorStop(0, design.bg);
+  grad.addColorStop(1, design.bg);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  const rand = mulberry32(seed + 41);
+  const bokehColors = [design.colors[0], design.colors[1], design.colors[2] || design.colors[0]];
+
+  for (let i = 0; i < 14; i++) {
+    const color = bokehColors[i % bokehColors.length];
+    const cx = CANVAS_W * rand();
+    const cy = CANVAS_H * rand();
+    const r = 30 + rand() * 130;
+    const soft = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    soft.addColorStop(0, hexToRgba(color, 0.28));
+    soft.addColorStop(0.7, hexToRgba(color, 0.10));
+    soft.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = soft;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Aesthetic & Lo-Fi — muted pastel wash + vignette + heavier grain for a retro film feel
+function drawLofiBackground(ctx, design, seed) {
+  ctx.fillStyle = design.bg;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  const rand = mulberry32(seed + 51);
+  const washColors = [design.colors[0], design.colors[2] || design.colors[0]];
+  washColors.forEach((color, i) => {
+    const cx = CANVAS_W * (0.2 + rand() * 0.6);
+    const cy = CANVAS_H * (0.2 + rand() * 0.6);
+    const r = CANVAS_W * (0.5 + rand() * 0.3);
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0, hexToRgba(color, i === 0 ? 0.16 : 0.10));
+    grad.addColorStop(1, hexToRgba(color, 0));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  });
+
+  // soft vignette for a faded, nostalgic lo-fi look
+  const vignette = ctx.createRadialGradient(
+    CANVAS_W / 2, CANVAS_H / 2, CANVAS_H * 0.35,
+    CANVAS_W / 2, CANVAS_H / 2, CANVAS_H * 0.75
+  );
+  vignette.addColorStop(0, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1, 'rgba(0,0,0,0.18)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+}
+
+// Shared dispatcher: picks the right background renderer, then applies the
+// grain overlay on top of every style so all backgrounds feel print-consistent.
+function drawBackground(ctx, design, seed) {
+  switch (design.bgType) {
+    case 'geo3d':  drawGeo3DBackground(ctx, design, seed); break;
+    case 'nature': drawNatureBackground(ctx, design, seed); break;
+    case 'neon':   drawNeonBackground(ctx, design, seed); break;
+    case 'bokeh':  drawBokehBackground(ctx, design, seed); break;
+    case 'lofi':   drawLofiBackground(ctx, design, seed); break;
+    default:       drawClassicBackground(ctx, design, seed);
+  }
 
   // subtle grain overlay for a premium, non-flat print-like feel
+  // (lo-fi style gets a slightly heavier grain to match its retro film look)
   ctx.save();
   ctx.globalCompositeOperation = 'overlay';
-  ctx.globalAlpha = 0.07;
+  ctx.globalAlpha = design.bgType === 'lofi' ? 0.12 : 0.07;
   const pattern = ctx.createPattern(getNoiseTile(), 'repeat');
   ctx.fillStyle = pattern;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
@@ -529,8 +873,69 @@ const titleInput = document.getElementById('titleInput');
 const grid = document.getElementById('grid');
 const statusEl = document.getElementById('status');
 const zipBtn = document.getElementById('zipBtn');
+const filterBar = document.getElementById('filterBar');
 
 let generatedCanvases = [];
+let activeCategory = 'all';
+
+// builds one small Shuffle + Download button group (reused for top and bottom bars)
+function buildBtnGroup(canvas, design, idx, getCurrentIndex, setCurrentIndex, title) {
+  const btnGroup = document.createElement('div');
+  btnGroup.className = 'btn-group';
+
+  const shuffleBtn = document.createElement('button');
+  shuffleBtn.className = 'shuffle-btn';
+  shuffleBtn.textContent = '🔀 Shuffle';
+  shuffleBtn.addEventListener('click', () => {
+    const cIdx = getCurrentIndex();
+    const sameCategory = DESIGNS
+      .map((d, i) => i)
+      .filter(i => DESIGNS[i].category === DESIGNS[cIdx].category && i !== cIdx);
+    const pool = sameCategory.length ? sameCategory : DESIGNS.map((d, i) => i).filter(i => i !== cIdx);
+    const nextIndex = pool[Math.floor(Math.random() * pool.length)];
+    setCurrentIndex(nextIndex);
+    drawDesign(canvas, DESIGNS[nextIndex], title, nextIndex);
+  });
+
+  const dlBtn = document.createElement('button');
+  dlBtn.textContent = '⬇️ Download';
+  dlBtn.addEventListener('click', () => {
+    canvas.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `blog-title-design-${idx + 1}.png`;
+      a.click();
+    });
+  });
+
+  btnGroup.appendChild(shuffleBtn);
+  btnGroup.appendChild(dlBtn);
+  return btnGroup;
+}
+
+function renderFilterBar() {
+  filterBar.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.textContent = cat.label;
+    btn.className = cat.id === activeCategory ? 'active' : '';
+    btn.addEventListener('click', () => {
+      activeCategory = cat.id;
+      [...filterBar.children].forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilter();
+    });
+    filterBar.appendChild(btn);
+  });
+  filterBar.style.display = 'flex';
+}
+
+function applyFilter() {
+  [...grid.children].forEach(card => {
+    const show = activeCategory === 'all' || card.dataset.category === activeCategory;
+    card.classList.toggle('hidden', !show);
+  });
+}
 
 generateBtn.addEventListener('click', async () => {
   const title = titleInput.value.trim();
@@ -543,62 +948,58 @@ generateBtn.addEventListener('click', async () => {
   grid.innerHTML = '';
   generatedCanvases = [];
   zipBtn.style.display = 'none';
+  activeCategory = 'all';
 
   await waitForFonts();
 
   DESIGNS.forEach((design, idx) => {
     const card = document.createElement('div');
     card.className = 'card';
+    card.dataset.category = design.category;
+
+    let currentDesignIndex = idx;
+    const getCurrentIndex = () => currentDesignIndex;
+    const setCurrentIndex = (i) => { currentDesignIndex = i; };
 
     const canvas = document.createElement('canvas');
-    let currentDesignIndex = idx;
     drawDesign(canvas, DESIGNS[currentDesignIndex], title, currentDesignIndex);
+
+    // top action bar — Shuffle + Download reachable without scrolling past the image
+    const footTop = document.createElement('div');
+    footTop.className = 'foot top';
+    footTop.appendChild(buildBtnGroup(canvas, design, idx, getCurrentIndex, setCurrentIndex, title));
+    card.appendChild(footTop);
+
     card.appendChild(canvas);
 
-    const foot = document.createElement('div');
-    foot.className = 'foot';
-    const label = document.createElement('span');
-    label.textContent = `Design ${idx + 1}`;
+    // bottom bar — label + category tag + Shuffle + Download again
+    const footBottom = document.createElement('div');
+    footBottom.className = 'foot';
+    const labelWrap = document.createElement('span');
+    labelWrap.textContent = `Design ${idx + 1}`;
+    const catTag = document.createElement('span');
+    catTag.className = 'cat-tag';
+    catTag.textContent = CATEGORY_LABEL[design.category] || design.category;
+    const labelCol = document.createElement('div');
+    labelCol.style.display = 'flex';
+    labelCol.style.flexDirection = 'column';
+    labelCol.style.gap = '3px';
+    labelCol.appendChild(labelWrap);
+    labelCol.appendChild(catTag);
 
-    const btnGroup = document.createElement('div');
-    btnGroup.className = 'btn-group';
-
-    const shuffleBtn = document.createElement('button');
-    shuffleBtn.className = 'shuffle-btn';
-    shuffleBtn.textContent = '🔀 Shuffle';
-    shuffleBtn.addEventListener('click', () => {
-      let nextIndex = currentDesignIndex;
-      if (DESIGNS.length > 1) {
-        do {
-          nextIndex = Math.floor(Math.random() * DESIGNS.length);
-        } while (nextIndex === currentDesignIndex);
-      }
-      currentDesignIndex = nextIndex;
-      drawDesign(canvas, DESIGNS[currentDesignIndex], title, currentDesignIndex);
-    });
-
-    const dlBtn = document.createElement('button');
-    dlBtn.textContent = 'Download';
-    dlBtn.addEventListener('click', () => {
-      canvas.toBlob(blob => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `blog-title-design-${idx + 1}.png`;
-        a.click();
-      });
-    });
-
-    btnGroup.appendChild(shuffleBtn);
-    btnGroup.appendChild(dlBtn);
-    foot.appendChild(label);
-    foot.appendChild(btnGroup);
-    card.appendChild(foot);
+    footBottom.appendChild(labelCol);
+    footBottom.appendChild(buildBtnGroup(canvas, design, idx, getCurrentIndex, setCurrentIndex, title));
+    card.appendChild(footBottom);
 
     grid.appendChild(card);
     generatedCanvases.push({ canvas, name: `blog-title-design-${idx + 1}.png` });
   });
 
-  statusEl.textContent = `✅ 66 designs taiyaar hain "${title}" ke liye.`;
+  renderFilterBar();
+  applyFilter();
+
+  statusEl.textContent = `✅ ${DESIGNS.length} designs taiyaar hain "${title}" ke liye.`;
+  zipBtn.textContent = `⬇️ Sabhi ${DESIGNS.length} Images ZIP mein Download Karein`;
   zipBtn.style.display = 'inline-block';
   generateBtn.disabled = false;
 });
@@ -620,11 +1021,11 @@ zipBtn.addEventListener('click', async () => {
   const content = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(content);
-  a.download = 'blog-title-66-designs.zip';
+  a.download = `blog-title-${DESIGNS.length}-designs.zip`;
   a.click();
 
   zipBtn.disabled = false;
-  zipBtn.textContent = '⬇️ Sabhi 66 Images ZIP mein Download Karein';
+  zipBtn.textContent = `⬇️ Sabhi ${DESIGNS.length} Images ZIP mein Download Karein`;
 });
 
 // allow Enter+Ctrl to generate
