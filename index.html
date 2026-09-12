@@ -90,12 +90,65 @@
     font-size: 0.78rem;
     background: #111827;
   }
-  .card .foot button.shuffle-btn { background: #7c3aed; }
-  .card .foot button.shuffle-btn:hover { background: #6d28d9; }
   .card .foot button:hover { background: #000; }
   .card .foot.top { padding: 8px 10px; justify-content: center; }
   .card .foot.top .btn-group { width: 100%; }
   .card .foot.top button { flex: 1 1 0; padding: 8px 6px; font-size: 0.72rem; }
+  .card .foot.top button.img-btn { background: #ea580c; }
+  .card .foot.top button.img-btn:hover { background: #c2410c; }
+  .card .foot.top button.img-btn.active { background: #9a3412; }
+  .card .foot.top button.bg-btn { background: #0891b2; }
+  .card .foot.top button.bg-btn:hover { background: #0e7490; }
+  .card .foot.top button.bg-btn.active { background: #155e63; }
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    flex-wrap: wrap;
+  }
+  .control-row .ic-label {
+    font-size: 0.68rem;
+    color: #555;
+    white-space: nowrap;
+  }
+  .control-row input[type="range"] {
+    flex: 1;
+    accent-color: #ea580c;
+  }
+  .control-row input[type="color"] {
+    width: 30px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    background: none;
+  }
+  .control-row .grad-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    color: #555;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .control-row .grad-toggle input { cursor: pointer; }
+  .control-row .remove-img-btn {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 4px 9px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .image-controls .remove-img-btn:hover { background: #b91c1c; }
   .card .cat-tag {
     font-size: 0.65rem;
     font-weight: 700;
@@ -144,7 +197,7 @@
 <body>
 <div class="wrap">
   <h1>📝 Blog Title Image Generator</h1>
-  <p class="sub">Blog title daaliye — bold chunky-font designs mein image ban jayengi, jisme Original bold styles ke saath Abstract &amp; 3D Geometric, Nature &amp; Golden Hour, Dark Mode &amp; Neon, Blurred Reality / Bokeh aur Aesthetic &amp; Lo-Fi backgrounds bhi shaamil hain. Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega. Neeche filter buttons se background style ke hisaab se sort karein, aur kisi bhi image se khush nahi ho to uske "Shuffle" button se naya pattern try karein.</p>
+  <p class="sub">Blog title daaliye — 30 alag bold chunky-font designs banengi, jisme Original bold styles ke saath Abstract &amp; 3D Geometric, Nature &amp; Golden Hour aur Dark Mode &amp; Neon backgrounds shaamil hain, har ek apne alag color combination ke saath. Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega. Neeche filter buttons se background style ke hisaab se sort karein. Kisi bhi design par "🖼️ Image" button se apni khud ki koi bhi photo background bana sakte hain — image apne aap halka blur ho jayegi taaki text saaf padha ja sake, aur "Visibility" slider se image ko kam ya jyada dikha sakte hain.</p>
 
   <div class="controls">
     <textarea id="titleInput" placeholder="Apna blog title yahan likhein... e.g. Nice Guy Syndrome: The Hidden Psychology Behind It"></textarea>
@@ -168,11 +221,12 @@ const PAD_Y = 90;
 const MAX_FONT = 150;
 const MIN_FONT = 26;
 const WATERMARK_RESERVE = 100;
-const MAX_LINE_SCALE = 1.3;
+const MAX_LINE_SCALE = 1.6;
+const TARGET_AREA_COVERAGE = 0.8; // each design's text block should fill ~80% of the available text area
 const WATERMARK_TEXT = 'Relationship Cues';
 const SPECIAL_CHARS = [':','-','–','—','|',';','!','?',','];
 
-// ---- Building blocks used to generate 66 bold, varied templates ----
+// ---- Building blocks used to generate 30 bold, varied templates ----
 
 // Bold/black-weight display fonts only (Fredoka hata di gayi hai — baaki sabke saamne thin dikhti thi;
 // wo ab sirf watermark ke liye use hogi)
@@ -194,30 +248,6 @@ function getFontTrio(i) {
 
 const ACCENTS = [null, 'bar', 'corner', 'frame', 'dots'];
 
-// Light backgrounds + dark/vivid 3-color palettes (readable on light bg)
-const LIGHT_BACKGROUNDS = ['#ffffff', '#fdf6e3', '#fbeee6', '#fff7d6', '#fdeaf3', '#eef3ff', '#f2f2f2'];
-const LIGHT_PALETTES = [
-  ['#5f9c3a', '#161616', '#d63b2f'], // green / black / red
-  ['#1f6fd6', '#111111', '#f2871f'], // blue / black / orange
-  ['#7b2fe0', '#161616', '#e0a90a'], // purple / black / yellow
-  ['#118a7e', '#161616', '#e8558d'], // teal / black / pink
-  ['#e8622c', '#0b2545', '#161616'], // orange / navy / black
-  ['#3aa655', '#7b2fe0', '#161616'], // green / purple / black
-  ['#12305c', '#d6362c', '#161616'], // navy / red / black
-  ['#d6362c', '#0b2545', '#e0a90a'], // red / navy / yellow
-  ['#0f9b8e', '#c2410c', '#161616'], // teal / burnt orange / black
-  ['#5b3fd6', '#161616', '#2fa84f'], // indigo / black / green
-];
-
-// Dark backgrounds + bright palettes (readable on dark bg)
-const DARK_BACKGROUNDS = ['#0d0d0d', '#141b2e', '#1a1025', '#2b0f14'];
-const DARK_PALETTES = [
-  ['#ffd400', '#ffffff', '#ff4d4d'], // yellow / white / red
-  ['#22d3ee', '#ffffff', '#f97316'], // cyan / white / orange
-  ['#a3e635', '#ffffff', '#f472b6'], // lime / white / pink
-  ['#fbbf24', '#f472b6', '#38bdf8'], // amber / pink / sky blue
-];
-
 // ---- Background style categories (used for the filter bar) ----
 const CATEGORIES = [
   { id: 'all',      label: '✨ Sabhi' },
@@ -225,40 +255,44 @@ const CATEGORIES = [
   { id: 'geo3d',    label: '🔺 Abstract & 3D Geometric' },
   { id: 'nature',   label: '🌄 Nature & Golden Hour' },
   { id: 'neon',     label: '🌃 Dark Mode & Neon' },
-  { id: 'bokeh',    label: '💡 Blurred Reality / Bokeh' },
-  { id: 'lofi',     label: '📼 Aesthetic & Lo-Fi' },
 ];
 
 function buildDesigns() {
   const designs = [];
 
-  // 48 designs on light backgrounds (Original Bold category)
-  for (let i = 0; i < 48; i++) {
-    const palette = LIGHT_PALETTES[i % LIGHT_PALETTES.length];
-    const bg = LIGHT_BACKGROUNDS[i % LIGHT_BACKGROUNDS.length];
-    const fonts = getFontTrio(i);
-    const accent = ACCENTS[i % ACCENTS.length];
-    designs.push({
-      name: `Design ${designs.length + 1}`,
-      bg, colors: palette,
-      fonts,
-      accent,
-      category: 'original',
-      bgType: 'classic'
-    });
+  // 12 distinct Original Bold designs — each with its own dedicated background
+  // color, 3-color text palette and font-order, so every one is visually unique.
+  // Designs 1-3 refreshed with a new butter/emerald/crimson set; designs 10-12
+  // newly added (lime, powder-blue, dark charcoal) to grow the group to 12.
+  const FIRST9_BACKGROUNDS = ['#fff8e7', '#e6f9f0', '#fbe4e4', '#a8dadc', '#ffb4a2', '#cdb4db', '#b5e2fa', '#f7d6bf', '#0b132b', '#eef9bf', '#dde5f0', '#2b2d42'];
+  const FIRST9_PALETTES = [
+    ['#e85d04', '#370617', '#ffba08'], // amber / blackcurrant / gold pop
+    ['#06a77d', '#023436', '#f2a541'], // emerald / deep teal / marigold pop
+    ['#9d0208', '#03071e', '#faa307'], // crimson / near-black / amber pop
+    ['#023e8a', '#03045e', '#00b4d8'], // cobalt / navy / cyan pop
+    ['#9d0208', '#370617', '#dc2f02'], // brick / oxblood / flame pop
+    ['#5a189a', '#240046', '#c77dff'], // violet / deep plum / lilac pop
+    ['#0077b6', '#03045e', '#48cae4'], // ocean / navy / sky pop
+    ['#bb3e03', '#6a040f', '#faa307'], // rust / maroon / amber pop
+    ['#f72585', '#ffffff', '#4cc9f0'], // hot pink / white / cyan (on near-black bg)
+    ['#606c38', '#283618', '#bc6c25'], // olive / deep forest / bronze pop
+    ['#3f37c9', '#1a1a2e', '#4cc9f0'], // indigo / ink / cyan pop
+    ['#ef233c', '#ffffff', '#8d99ae'], // red / white / steel grey (on charcoal bg)
+  ];
+  // reversed offset (5,1,3) so this group's font cycling reads differently
+  // from every other category's rotation
+  function getFirst9FontTrio(i) {
+    const n = FONTS.length;
+    return [FONTS[(i + 5) % n], FONTS[(i + 1) % n], FONTS[(i + 3) % n]];
   }
 
-  // 18 designs on dark backgrounds (Original Bold category)
-  for (let i = 0; i < 18; i++) {
-    const palette = DARK_PALETTES[i % DARK_PALETTES.length];
-    const bg = DARK_BACKGROUNDS[i % DARK_BACKGROUNDS.length];
-    const fonts = getFontTrio(i + 3);
-    const accent = ACCENTS[(i + 1) % ACCENTS.length];
+  for (let i = 0; i < 12; i++) {
     designs.push({
       name: `Design ${designs.length + 1}`,
-      bg, colors: palette,
-      fonts,
-      accent,
+      bg: FIRST9_BACKGROUNDS[i],
+      colors: FIRST9_PALETTES[i],
+      fonts: getFirst9FontTrio(i),
+      accent: ACCENTS[i % ACCENTS.length],
       category: 'original',
       bgType: 'classic'
     });
@@ -320,48 +354,12 @@ function buildNeonDesigns() {
   }));
 }
 
-function buildBokehDesigns() {
-  const combos = [
-    { bg: '#fdf4ec', colors: ['#e07a5f', '#3d405b', '#f2cc8f'] },
-    { bg: '#eef2fb', colors: ['#3d5a80', '#293241', '#ee6c4d'] },
-    { bg: '#fbeef0', colors: ['#c9184a', '#4a1942', '#ff8fa3'] },
-    { bg: '#12141f', colors: ['#ffd166', '#ffffff', '#06d6a0'] },
-    { bg: '#161327', colors: ['#f72585', '#ffffff', '#4cc9f0'] },
-    { bg: '#0e1420', colors: ['#ffb703', '#ffffff', '#8ecae6'] },
-  ];
-  return combos.map((c, i) => ({
-    name: '', bg: c.bg, colors: c.colors,
-    fonts: getFontTrio(i + 4),
-    accent: null,
-    category: 'bokeh', bgType: 'bokeh'
-  }));
-}
-
-function buildLofiDesigns() {
-  const combos = [
-    { bg: '#e9e1d3', colors: ['#7d5a50', '#2f2f2f', '#b56576'] },
-    { bg: '#e3dcd0', colors: ['#6d6875', '#2f2f2f', '#e5989b'] },
-    { bg: '#f1e5d1', colors: ['#8a5a44', '#33261d', '#c98474'] },
-    { bg: '#2b2320', colors: ['#e8c07d', '#f4ede4', '#b56576'] },
-    { bg: '#26211d', colors: ['#e0a458', '#f4ede4', '#8a5a44'] },
-    { bg: '#30281f', colors: ['#dbb68e', '#f4ede4', '#b08968'] },
-  ];
-  return combos.map((c, i) => ({
-    name: '', bg: c.bg, colors: c.colors,
-    fonts: getFontTrio(i + 5),
-    accent: ACCENTS[(i + 3) % ACCENTS.length],
-    category: 'lofi', bgType: 'lofi'
-  }));
-}
-
-// All design templates: existing bold designs + 5 new background style categories
+// All design templates: existing bold designs + new background style categories
 const DESIGNS = [
   ...buildDesigns(),
   ...buildGeo3DDesigns(),
   ...buildNatureDesigns(),
   ...buildNeonDesigns(),
-  ...buildBokehDesigns(),
-  ...buildLofiDesigns(),
 ];
 DESIGNS.forEach((d, i) => { d.name = `Design ${i + 1}`; });
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map(c => [c.id, c.label]));
@@ -475,6 +473,27 @@ function fitText(ctx, styleSegments, design) {
       totalHeight: lineHeights.reduce((a, b) => a + b, 0)
     };
   }
+
+  // Boost the chosen size so the text block fills roughly TARGET_AREA_COVERAGE
+  // (80%) of the available text area — short titles no longer look small and
+  // lost on the canvas. Boost is capped so no line ever spills past the edge.
+  const currentRatio = chosen.totalHeight / availableHeight;
+  if (currentRatio < TARGET_AREA_COVERAGE) {
+    const desiredBoost = TARGET_AREA_COVERAGE / currentRatio;
+    const widthBoosts = chosen.lines.map((l, i) => {
+      const font = design.fonts[l.group % design.fonts.length];
+      ctx.font = `${font.weight} ${chosen.fontSize * chosen.scales[i]}px ${font.family}`;
+      const currentWidth = ctx.measureText(l.text).width;
+      return currentWidth > 0 ? maxWidth / currentWidth : Infinity;
+    });
+    const boost = Math.min(desiredBoost, ...widthBoosts, 4); // 4x is a sane ceiling
+    if (boost > 1) {
+      chosen.fontSize *= boost;
+      chosen.lineHeights = chosen.lineHeights.map(h => h * boost);
+      chosen.totalHeight *= boost;
+    }
+  }
+
   return chosen;
 }
 
@@ -508,7 +527,7 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// one shared grain tile reused across all 66 canvases (fast + consistent texture)
+// one shared grain tile reused across all 30 canvases (fast + consistent texture)
 let _noiseTile = null;
 function getNoiseTile() {
   if (_noiseTile) return _noiseTile;
@@ -673,83 +692,97 @@ function drawNeonBackground(ctx, design, seed) {
   }
 }
 
-// Blurred Reality / Bokeh Effect — soft overlapping out-of-focus light circles
-function drawBokehBackground(ctx, design, seed) {
-  const grad = ctx.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
-  grad.addColorStop(0, design.bg);
-  grad.addColorStop(1, design.bg);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-  const rand = mulberry32(seed + 41);
-  const bokehColors = [design.colors[0], design.colors[1], design.colors[2] || design.colors[0]];
-
-  for (let i = 0; i < 14; i++) {
-    const color = bokehColors[i % bokehColors.length];
-    const cx = CANVAS_W * rand();
-    const cy = CANVAS_H * rand();
-    const r = 30 + rand() * 130;
-    const soft = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    soft.addColorStop(0, hexToRgba(color, 0.28));
-    soft.addColorStop(0.7, hexToRgba(color, 0.10));
-    soft.addColorStop(1, hexToRgba(color, 0));
-    ctx.fillStyle = soft;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-// Aesthetic & Lo-Fi — muted pastel wash + vignette + heavier grain for a retro film feel
-function drawLofiBackground(ctx, design, seed) {
-  ctx.fillStyle = design.bg;
-  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-  const rand = mulberry32(seed + 51);
-  const washColors = [design.colors[0], design.colors[2] || design.colors[0]];
-  washColors.forEach((color, i) => {
-    const cx = CANVAS_W * (0.2 + rand() * 0.6);
-    const cy = CANVAS_H * (0.2 + rand() * 0.6);
-    const r = CANVAS_W * (0.5 + rand() * 0.3);
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    grad.addColorStop(0, hexToRgba(color, i === 0 ? 0.16 : 0.10));
-    grad.addColorStop(1, hexToRgba(color, 0));
+// user-chosen flat/gradient background, drawn instead of the auto decorative one
+function drawCustomColorBackground(ctx, customBg) {
+  if (customBg.type === 'gradient') {
+    const grad = ctx.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
+    grad.addColorStop(0, customBg.color1);
+    grad.addColorStop(1, customBg.color2);
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-  });
-
-  // soft vignette for a faded, nostalgic lo-fi look
-  const vignette = ctx.createRadialGradient(
-    CANVAS_W / 2, CANVAS_H / 2, CANVAS_H * 0.35,
-    CANVAS_W / 2, CANVAS_H / 2, CANVAS_H * 0.75
-  );
-  vignette.addColorStop(0, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, 'rgba(0,0,0,0.18)');
-  ctx.fillStyle = vignette;
+  } else {
+    ctx.fillStyle = customBg.color;
+  }
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 }
 
 // Shared dispatcher: picks the right background renderer, then applies the
 // grain overlay on top of every style so all backgrounds feel print-consistent.
 function drawBackground(ctx, design, seed) {
-  switch (design.bgType) {
-    case 'geo3d':  drawGeo3DBackground(ctx, design, seed); break;
-    case 'nature': drawNatureBackground(ctx, design, seed); break;
-    case 'neon':   drawNeonBackground(ctx, design, seed); break;
-    case 'bokeh':  drawBokehBackground(ctx, design, seed); break;
-    case 'lofi':   drawLofiBackground(ctx, design, seed); break;
-    default:       drawClassicBackground(ctx, design, seed);
+  if (design.customBg) {
+    drawCustomColorBackground(ctx, design.customBg);
+  } else {
+    switch (design.bgType) {
+      case 'geo3d':  drawGeo3DBackground(ctx, design, seed); break;
+      case 'nature': drawNatureBackground(ctx, design, seed); break;
+      case 'neon':   drawNeonBackground(ctx, design, seed); break;
+      default:       drawClassicBackground(ctx, design, seed);
+    }
   }
 
   // subtle grain overlay for a premium, non-flat print-like feel
-  // (lo-fi style gets a slightly heavier grain to match its retro film look)
   ctx.save();
   ctx.globalCompositeOperation = 'overlay';
-  ctx.globalAlpha = design.bgType === 'lofi' ? 0.12 : 0.07;
+  ctx.globalAlpha = 0.07;
   const pattern = ctx.createPattern(getNoiseTile(), 'repeat');
   ctx.fillStyle = pattern;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   ctx.restore();
+}
+
+// draws `img` covering the given rect (like CSS background-size: cover)
+function drawImageCover(ctx, img, x, y, w, h) {
+  const imgRatio = img.width / img.height;
+  const boxRatio = w / h;
+  let sx, sy, sw, sh;
+  if (imgRatio > boxRatio) {
+    sh = img.height;
+    sw = sh * boxRatio;
+    sx = (img.width - sw) / 2;
+    sy = 0;
+  } else {
+    sw = img.width;
+    sh = sw / boxRatio;
+    sx = 0;
+    sy = (img.height - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+const IMAGE_BLUR_PX = 10; // fixed soft blur so an attached photo never fights with the text
+const DEFAULT_IMAGE_OPACITY = 0.55; // 55% visible by default, rest stays the design's own background
+
+// draws the user-attached background photo (blurred + opacity-controlled).
+// No full-canvas overlay here — readability is handled by a localized
+// gradient scrim behind the text block plus a thin outline + subtle shadow
+// per line (see drawTextGradientScrim and the lines.forEach loop below), so
+// the photo stays fully visible everywhere outside the text area.
+function drawCustomImageLayer(ctx, design) {
+  if (!design.customImage) return;
+  const opacity = (typeof design.imageOpacity === 'number') ? design.imageOpacity : DEFAULT_IMAGE_OPACITY;
+
+  ctx.save();
+  ctx.filter = `blur(${IMAGE_BLUR_PX}px)`;
+  ctx.globalAlpha = opacity;
+  // draw slightly oversized so the blur never reveals canvas edges
+  drawImageCover(ctx, design.customImage, -20, -20, CANVAS_W + 40, CANVAS_H + 40);
+  ctx.restore();
+}
+
+// professional "poster caption" gradient scrim: darkens a soft band behind
+// the text block only (fading to fully transparent above/below), so the rest
+// of the attached photo stays completely clear and visible.
+function drawTextGradientScrim(ctx, blockTop, blockBottom) {
+  const blockHeight = blockBottom - blockTop;
+  const pad = blockHeight * 0.45 + 50; // fade-out distance above/below the text
+  const gradTop = Math.max(0, blockTop - pad);
+  const gradBottom = Math.min(CANVAS_H, blockBottom + pad);
+  const grad = ctx.createLinearGradient(0, gradTop, 0, gradBottom);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(0.32, 'rgba(0,0,0,0.4)');
+  grad.addColorStop(0.68, 'rgba(0,0,0,0.4)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, gradTop, CANVAS_W, gradBottom - gradTop);
 }
 
 function drawDesign(canvas, design, title, seed) {
@@ -759,6 +792,9 @@ function drawDesign(canvas, design, title, seed) {
 
   // background — soft color blobs + subtle grain instead of flat fill
   drawBackground(ctx, design, seed || 0);
+
+  // user-attached photo background (if any) — blurred + faded so text stays visible
+  drawCustomImageLayer(ctx, design);
 
   // decorative accents
   if (design.accent === 'bar') {
@@ -798,13 +834,22 @@ function drawDesign(canvas, design, title, seed) {
   const fit = fitText(ctx, styleSegments, design);
   const { lines, scales, lineHeights, totalHeight } = fit;
 
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
   const textAreaTop = PAD_Y;
   const textAreaBottom = CANVAS_H - PAD_Y - WATERMARK_RESERVE;
   const textAreaHeight = textAreaBottom - textAreaTop;
-  let runningTop = textAreaTop + (textAreaHeight - totalHeight) / 2;
+  const textBlockTop = textAreaTop + (textAreaHeight - totalHeight) / 2;
+  const textBlockBottom = textBlockTop + totalHeight;
+
+  // when a photo is attached, darken a soft band behind the text block only —
+  // the rest of the photo stays fully visible (professional poster/thumbnail look)
+  if (design.customImage) {
+    drawTextGradientScrim(ctx, textBlockTop, textBlockBottom);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  let cursorY = textBlockTop;
 
   // Each style-group has its own font + its own tied color, so every image
   // shows at least 3 distinct bold fonts, each with a consistent, matching color.
@@ -812,10 +857,34 @@ function drawDesign(canvas, design, title, seed) {
     const groupFont = design.fonts[lineObj.group % design.fonts.length];
     const fs = fit.fontSize * scales[i];
     ctx.font = `${groupFont.weight} ${fs}px ${groupFont.family}`;
-    ctx.fillStyle = design.colors[lineObj.group % design.colors.length];
-    const centerY = runningTop + lineHeights[i] / 2;
+    const textColor = design.colors[lineObj.group % design.colors.length];
+    const centerY = cursorY + lineHeights[i] / 2;
+    ctx.fillStyle = textColor;
+
+    ctx.save();
+    if (design.customImage) {
+      // thin crisp outline (colour opposite the text) guarantees contrast no
+      // matter how busy the photo is, then one clean, subtle drop-shadow —
+      // no glow, no box, so it reads as a normal, professional title treatment.
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = Math.max(2, fs * 0.035);
+      ctx.strokeStyle = luminance(textColor) > 150 ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)';
+      ctx.strokeText(lineObj.text, CANVAS_W / 2, centerY);
+
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur = fs * 0.06;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = fs * 0.035;
+    } else {
+      // subtle shadow so the title still pops a little on the plain/decorative backgrounds
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = fs * 0.1;
+      ctx.shadowOffsetY = fs * 0.03;
+    }
     ctx.fillText(lineObj.text, CANVAS_W / 2, centerY);
-    runningTop += lineHeights[i];
+    ctx.restore();
+
+    cursorY += lineHeights[i];
   });
 
   drawWatermark(ctx, design);
@@ -829,8 +898,20 @@ function luminance(hex) {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
+// accounts for a user-picked custom background (solid or gradient) when
+// deciding whether watermark/scrim contrast should be light-on-dark or dark-on-light
+function effectiveBgLuminance(design) {
+  if (design.customBg) {
+    if (design.customBg.type === 'gradient') {
+      return (luminance(design.customBg.color1) + luminance(design.customBg.color2)) / 2;
+    }
+    return luminance(design.customBg.color);
+  }
+  return luminance(design.bg);
+}
+
 function drawWatermark(ctx, design) {
-  const isLight = luminance(design.bg) > 150;
+  const isLight = effectiveBgLuminance(design) > 150;
   const y = CANVAS_H - 60; // lifted up from the very bottom edge for cleaner branding
 
   ctx.save();
@@ -878,23 +959,47 @@ const filterBar = document.getElementById('filterBar');
 let generatedCanvases = [];
 let activeCategory = 'all';
 
-// builds one small Shuffle + Download button group (reused for top and bottom bars)
-function buildBtnGroup(canvas, design, idx, getCurrentIndex, setCurrentIndex, title) {
+// builds the top button group: attach/change background photo + BG colour toggle + download
+function buildTopButtonGroup(canvas, design, idx, title, onImageChange, onBgToggle) {
   const btnGroup = document.createElement('div');
   btnGroup.className = 'btn-group';
 
-  const shuffleBtn = document.createElement('button');
-  shuffleBtn.className = 'shuffle-btn';
-  shuffleBtn.textContent = '🔀 Shuffle';
-  shuffleBtn.addEventListener('click', () => {
-    const cIdx = getCurrentIndex();
-    const sameCategory = DESIGNS
-      .map((d, i) => i)
-      .filter(i => DESIGNS[i].category === DESIGNS[cIdx].category && i !== cIdx);
-    const pool = sameCategory.length ? sameCategory : DESIGNS.map((d, i) => i).filter(i => i !== cIdx);
-    const nextIndex = pool[Math.floor(Math.random() * pool.length)];
-    setCurrentIndex(nextIndex);
-    drawDesign(canvas, DESIGNS[nextIndex], title, nextIndex);
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.style.display = 'none';
+
+  const imgBtn = document.createElement('button');
+  imgBtn.className = 'img-btn';
+  imgBtn.textContent = '🖼️ Image';
+  imgBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        design.customImage = img;
+        if (typeof design.imageOpacity !== 'number') design.imageOpacity = DEFAULT_IMAGE_OPACITY;
+        imgBtn.classList.add('active');
+        imgBtn.textContent = '🖼️ Change';
+        drawDesign(canvas, design, title, idx);
+        onImageChange();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    fileInput.value = '';
+  });
+
+  const bgBtn = document.createElement('button');
+  bgBtn.className = 'bg-btn';
+  bgBtn.textContent = '🎨 BG';
+  bgBtn.addEventListener('click', () => {
+    bgBtn.classList.toggle('active');
+    onBgToggle();
   });
 
   const dlBtn = document.createElement('button');
@@ -908,9 +1013,120 @@ function buildBtnGroup(canvas, design, idx, getCurrentIndex, setCurrentIndex, ti
     });
   });
 
-  btnGroup.appendChild(shuffleBtn);
+  btnGroup.appendChild(imgBtn);
+  btnGroup.appendChild(bgBtn);
   btnGroup.appendChild(dlBtn);
-  return btnGroup;
+  btnGroup.appendChild(fileInput);
+  return { btnGroup, imgBtn };
+}
+
+// builds the visibility-slider row shown once a photo has been attached to a card
+function buildImageControls(canvas, design, idx, title, imgBtn) {
+  const row = document.createElement('div');
+  row.className = 'control-row';
+  row.style.display = 'none';
+
+  const label = document.createElement('span');
+  label.className = 'ic-label';
+  label.textContent = '🔅 Visibility';
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = '0';
+  slider.max = '100';
+  slider.value = String(Math.round(DEFAULT_IMAGE_OPACITY * 100));
+  slider.addEventListener('input', () => {
+    design.imageOpacity = Number(slider.value) / 100;
+    drawDesign(canvas, design, title, idx);
+  });
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-img-btn';
+  removeBtn.textContent = '✖';
+  removeBtn.title = 'Image hataayein';
+  removeBtn.addEventListener('click', () => {
+    design.customImage = null;
+    row.style.display = 'none';
+    imgBtn.classList.remove('active');
+    imgBtn.textContent = '🖼️ Image';
+    drawDesign(canvas, design, title, idx);
+  });
+
+  row.appendChild(label);
+  row.appendChild(slider);
+  row.appendChild(removeBtn);
+
+  const show = () => {
+    slider.value = String(Math.round((design.imageOpacity ?? DEFAULT_IMAGE_OPACITY) * 100));
+    row.style.display = 'flex';
+  };
+
+  return { row, show };
+}
+
+// builds the background-colour row: a colour picker (acts as the "colour wheel"),
+// a Gradient toggle that reveals a second picker, and a reset back to the auto design
+function buildBgColorControls(canvas, design, idx, title) {
+  const row = document.createElement('div');
+  row.className = 'control-row';
+  row.style.display = 'none';
+
+  const label = document.createElement('span');
+  label.className = 'ic-label';
+  label.textContent = '🎨 BG Colour';
+
+  const color1 = document.createElement('input');
+  color1.type = 'color';
+  color1.value = (design.customBg && (design.customBg.color1 || design.customBg.color)) || design.bg;
+
+  const gradToggle = document.createElement('label');
+  gradToggle.className = 'grad-toggle';
+  const gradCheckbox = document.createElement('input');
+  gradCheckbox.type = 'checkbox';
+  gradCheckbox.checked = !!(design.customBg && design.customBg.type === 'gradient');
+  gradToggle.appendChild(gradCheckbox);
+  gradToggle.appendChild(document.createTextNode('Gradient'));
+
+  const color2 = document.createElement('input');
+  color2.type = 'color';
+  color2.value = (design.customBg && design.customBg.color2) || design.colors[0] || '#ffffff';
+  color2.style.display = gradCheckbox.checked ? 'inline-block' : 'none';
+
+  function applyBg() {
+    design.customBg = gradCheckbox.checked
+      ? { type: 'gradient', color1: color1.value, color2: color2.value }
+      : { type: 'solid', color: color1.value };
+    drawDesign(canvas, design, title, idx);
+  }
+
+  color1.addEventListener('input', applyBg);
+  color2.addEventListener('input', applyBg);
+  gradCheckbox.addEventListener('change', () => {
+    color2.style.display = gradCheckbox.checked ? 'inline-block' : 'none';
+    applyBg();
+  });
+
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'remove-img-btn';
+  resetBtn.textContent = '✖';
+  resetBtn.title = 'Original background par vaapas jaayein';
+  resetBtn.addEventListener('click', () => {
+    design.customBg = null;
+    color1.value = design.bg;
+    gradCheckbox.checked = false;
+    color2.style.display = 'none';
+    drawDesign(canvas, design, title, idx);
+  });
+
+  row.appendChild(label);
+  row.appendChild(color1);
+  row.appendChild(gradToggle);
+  row.appendChild(color2);
+  row.appendChild(resetBtn);
+
+  const toggleShow = () => { row.style.display = row.style.display === 'none' ? 'flex' : 'none'; };
+
+  return { row, toggleShow };
 }
 
 function renderFilterBar() {
@@ -957,22 +1173,32 @@ generateBtn.addEventListener('click', async () => {
     card.className = 'card';
     card.dataset.category = design.category;
 
-    let currentDesignIndex = idx;
-    const getCurrentIndex = () => currentDesignIndex;
-    const setCurrentIndex = (i) => { currentDesignIndex = i; };
-
     const canvas = document.createElement('canvas');
-    drawDesign(canvas, DESIGNS[currentDesignIndex], title, currentDesignIndex);
+    drawDesign(canvas, design, title, idx);
 
-    // top action bar — Shuffle + Download reachable without scrolling past the image
+    // top action bar — Image attach + BG colour + Download, reachable without scrolling past the image
     const footTop = document.createElement('div');
     footTop.className = 'foot top';
-    footTop.appendChild(buildBtnGroup(canvas, design, idx, getCurrentIndex, setCurrentIndex, title));
+    const bgControls = buildBgColorControls(canvas, design, idx, title);
+    const { btnGroup, imgBtn } = buildTopButtonGroup(canvas, design, idx, title, () => imgControls.show(), () => bgControls.toggleShow());
+    if (design.customImage) {
+      imgBtn.classList.add('active');
+      imgBtn.textContent = '🖼️ Change';
+    }
+    footTop.appendChild(btnGroup);
     card.appendChild(footTop);
 
     card.appendChild(canvas);
 
-    // bottom bar — label + category tag + Shuffle + Download again
+    // visibility slider row — hidden until a photo is attached to this card
+    const imgControls = buildImageControls(canvas, design, idx, title, imgBtn);
+    card.appendChild(imgControls.row);
+    if (design.customImage) imgControls.show();
+
+    // background colour row — hidden until the "🎨 BG" button is toggled
+    card.appendChild(bgControls.row);
+
+    // bottom bar — label + category tag
     const footBottom = document.createElement('div');
     footBottom.className = 'foot';
     const labelWrap = document.createElement('span');
@@ -988,7 +1214,6 @@ generateBtn.addEventListener('click', async () => {
     labelCol.appendChild(catTag);
 
     footBottom.appendChild(labelCol);
-    footBottom.appendChild(buildBtnGroup(canvas, design, idx, getCurrentIndex, setCurrentIndex, title));
     card.appendChild(footBottom);
 
     grid.appendChild(card);
