@@ -58,7 +58,7 @@
   #status { font-size: 0.9rem; color: #555; margin: 4px 0 20px; min-height: 1.2em; }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 18px;
   }
   .card {
@@ -92,14 +92,27 @@
   }
   .card .foot button:hover { background: #000; }
   .card .foot.top { padding: 8px 10px; justify-content: center; }
-  .card .foot.top .btn-group { width: 100%; }
-  .card .foot.top button { flex: 1 1 0; padding: 8px 6px; font-size: 0.72rem; }
+  .card .foot.top .btn-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .card .foot.top button {
+    padding: 9px 4px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .card .foot.top button.img-btn { background: #ea580c; }
   .card .foot.top button.img-btn:hover { background: #c2410c; }
   .card .foot.top button.img-btn.active { background: #9a3412; }
   .card .foot.top button.bg-btn { background: #0891b2; }
   .card .foot.top button.bg-btn:hover { background: #0e7490; }
   .card .foot.top button.bg-btn.active { background: #155e63; }
+  .card .foot.top button.pos-btn { background: #7c3aed; }
+  .card .foot.top button.pos-btn:hover { background: #6d28d9; }
   .control-row {
     display: flex;
     align-items: center;
@@ -354,9 +367,9 @@ function buildLinesForDesign(ctx, styleSegments, design, fontSize, maxWidth) {
   return lines;
 }
 
-function fitText(ctx, styleSegments, design) {
+function fitText(ctx, styleSegments, design, availableHeightOverride) {
   const maxWidth = CANVAS_W - PAD_X * 2;
-  const availableHeight = CANVAS_H - PAD_Y * 2 - WATERMARK_RESERVE;
+  const availableHeight = availableHeightOverride || (CANVAS_H - PAD_Y * 2 - WATERMARK_RESERVE);
   let chosen = null;
 
   for (let fs = MAX_FONT; fs >= MIN_FONT; fs -= 2) {
@@ -507,21 +520,25 @@ function drawBackground(ctx, design, seed) {
   ctx.restore();
 }
 
-// draws `img` covering the given rect (like CSS background-size: cover)
-function drawImageCover(ctx, img, x, y, w, h) {
+// draws `img` covering the given rect (like CSS background-size: cover).
+// posX/posY (0 to 1) work like CSS background-position — 0.5/0.5 is the old
+// centered crop; moving them shifts which part of the photo stays visible.
+function drawImageCover(ctx, img, x, y, w, h, posX, posY) {
+  if (typeof posX !== 'number') posX = 0.5;
+  if (typeof posY !== 'number') posY = 0.5;
   const imgRatio = img.width / img.height;
   const boxRatio = w / h;
   let sx, sy, sw, sh;
   if (imgRatio > boxRatio) {
     sh = img.height;
     sw = sh * boxRatio;
-    sx = (img.width - sw) / 2;
+    sx = (img.width - sw) * posX;
     sy = 0;
   } else {
     sw = img.width;
     sh = sw / boxRatio;
     sx = 0;
-    sy = (img.height - sh) / 2;
+    sy = (img.height - sh) * posY;
   }
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
@@ -529,20 +546,96 @@ function drawImageCover(ctx, img, x, y, w, h) {
 const IMAGE_BLUR_PX = 10; // fixed soft blur so an attached photo never fights with the text
 const DEFAULT_IMAGE_OPACITY = 0.55; // 55% visible by default, rest stays the design's own background
 
-// draws the user-attached background photo (blurred + opacity-controlled).
-// No overlay/scrim here — readability is guaranteed instead by a fixed
-// white-fill + black-outline text combo (see the lines.forEach loop below),
-// so the photo stays fully visible everywhere behind the title.
-function drawCustomImageLayer(ctx, design) {
-  if (!design.customImage) return;
-  const opacity = (typeof design.imageOpacity === 'number') ? design.imageOpacity : DEFAULT_IMAGE_OPACITY;
+// ---- "Sharp + Gradient" photo style (Pinterest-pin look: clear photo, dark
+// fade only behind the title, bold left-aligned text) ----
+const DEFAULT_PHOTO_STYLE = 'gradient'; // new default whenever a photo is attached
+const DEFAULT_GRADIENT_STRENGTH = 0.7; // default darkness of the fade in gradient style
+const TEXT_ZONE_RATIO = 0.55; // when text is Top/Bottom-anchored, it's confined to this fraction of the full text zone, leaving the rest of the photo uncovered
 
-  ctx.save();
-  ctx.filter = `blur(${IMAGE_BLUR_PX}px)`;
-  ctx.globalAlpha = opacity;
-  // draw slightly oversized so the blur never reveals canvas edges
-  drawImageCover(ctx, design.customImage, -20, -20, CANVAS_W + 40, CANVAS_H + 40);
-  ctx.restore();
+// ---- Text vertical position (Top / Center / Bottom) ----
+// Explicit user choice (design.textPosition) always wins. With no explicit
+// choice: a sharp+gradient photo defaults to 'top' (matches the fade), any
+// other design defaults to 'center' (the original full-height centered look).
+function resolveTextPosition(design) {
+  if (design.textPosition) return design.textPosition;
+  const hasGradientPhoto = !!(design.customImage && (design.photoStyle || DEFAULT_PHOTO_STYLE) === 'gradient');
+  return hasGradientPhoto ? 'top' : 'center';
+}
+
+// computes the vertical zone (top/bottom pixel bounds) the title text is
+// confined to, based on the resolved text position
+function getTextZone(textPosition) {
+  const fullHeight = CANVAS_H - PAD_Y * 2 - WATERMARK_RESERVE;
+  const zoneHeight = textPosition === 'center' ? fullHeight : fullHeight * TEXT_ZONE_RATIO;
+  let zoneTop;
+  if (textPosition === 'bottom') zoneTop = PAD_Y + (fullHeight - zoneHeight);
+  else zoneTop = PAD_Y; // 'top' and 'center' both start from the top padding
+  return { zoneTop, zoneHeight, zoneBottom: zoneTop + zoneHeight };
+}
+
+// resolves the effective slider value for whichever photo style is active,
+// applying the right default (photo opacity for blur mode, fade strength for gradient mode)
+function getEffectiveImageValue(design) {
+  if (typeof design.imageOpacity === 'number') return design.imageOpacity;
+  const style = design.photoStyle || DEFAULT_PHOTO_STYLE;
+  return style === 'gradient' ? DEFAULT_GRADIENT_STRENGTH : DEFAULT_IMAGE_OPACITY;
+}
+
+// draws the dark fade for the gradient photo style, following wherever the
+// text zone currently is: fades in from the top for 'top' text, from the
+// bottom for 'bottom' text, and washes the whole zone for 'center' text.
+function drawGradientFade(ctx, value, zone, textPosition) {
+  if (textPosition === 'bottom') {
+    const fadeStartY = Math.max(0, zone.zoneTop - 140);
+    const grad = ctx.createLinearGradient(0, CANVAS_H, 0, fadeStartY);
+    grad.addColorStop(0, hexToRgba('#000000', Math.min(0.85, value + 0.15)));
+    grad.addColorStop(0.35, hexToRgba('#000000', value * 0.55));
+    grad.addColorStop(1, hexToRgba('#000000', 0));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, fadeStartY, CANVAS_W, CANVAS_H - fadeStartY);
+  } else if (textPosition === 'center') {
+    ctx.fillStyle = hexToRgba('#000000', Math.min(0.7, value * 0.75));
+    ctx.fillRect(0, zone.zoneTop, CANVAS_W, zone.zoneHeight);
+  } else {
+    const fadeEndY = Math.min(CANVAS_H, zone.zoneBottom + 140);
+    const grad = ctx.createLinearGradient(0, 0, 0, fadeEndY);
+    grad.addColorStop(0, hexToRgba('#000000', Math.min(0.85, value + 0.15)));
+    grad.addColorStop(0.65, hexToRgba('#000000', value * 0.55));
+    grad.addColorStop(1, hexToRgba('#000000', 0));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_W, fadeEndY);
+  }
+}
+
+// draws the user-attached background photo.
+// 'blur' style (legacy): photo blurred + faded, readability guaranteed by a
+//   fixed white-fill + black-outline text combo — unaffected by text position.
+// 'gradient' style (default): photo stays sharp/clear; a dark fade follows
+//   the current text zone (top/center/bottom) so the rest of the photo stays
+//   fully visible, and the title is left-aligned over the fade.
+function drawCustomImageLayer(ctx, design, zone, textPosition) {
+  if (!design.customImage) return;
+  const style = design.photoStyle || DEFAULT_PHOTO_STYLE;
+  const value = getEffectiveImageValue(design);
+  const posX = (typeof design.imagePosX === 'number') ? design.imagePosX : 0.5;
+  const posY = (typeof design.imagePosY === 'number') ? design.imagePosY : 0.5;
+
+  if (style === 'gradient') {
+    ctx.save();
+    drawImageCover(ctx, design.customImage, 0, 0, CANVAS_W, CANVAS_H, posX, posY);
+    ctx.restore();
+
+    ctx.save();
+    drawGradientFade(ctx, value, zone, textPosition);
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.filter = `blur(${IMAGE_BLUR_PX}px)`;
+    ctx.globalAlpha = value;
+    // draw slightly oversized so the blur never reveals canvas edges
+    drawImageCover(ctx, design.customImage, -20, -20, CANVAS_W + 40, CANVAS_H + 40, posX, posY);
+    ctx.restore();
+  }
 }
 
 function drawDesign(canvas, design, title, seed) {
@@ -550,11 +643,14 @@ function drawDesign(canvas, design, title, seed) {
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
 
+  const textPosition = resolveTextPosition(design);
+  const zone = getTextZone(textPosition);
+
   // background — soft color blobs + subtle grain instead of flat fill
   drawBackground(ctx, design, seed || 0);
 
-  // user-attached photo background (if any) — blurred + faded so text stays visible
-  drawCustomImageLayer(ctx, design);
+  // user-attached photo background (if any) — style + fade follow the text zone
+  drawCustomImageLayer(ctx, design, zone, textPosition);
 
   // decorative accents
   if (design.accent === 'bar') {
@@ -591,15 +687,15 @@ function drawDesign(canvas, design, title, seed) {
   }
 
   const styleSegments = buildStyleSegments(title.toUpperCase());
-  const fit = fitText(ctx, styleSegments, design);
+  const isGradientPhoto = !!(design.customImage && (design.photoStyle || DEFAULT_PHOTO_STYLE) === 'gradient');
+
+  const fit = fitText(ctx, styleSegments, design, textPosition === 'center' ? undefined : zone.zoneHeight);
   const { lines, scales, lineHeights, totalHeight } = fit;
 
-  const textAreaTop = PAD_Y;
-  const textAreaBottom = CANVAS_H - PAD_Y - WATERMARK_RESERVE;
-  const textAreaHeight = textAreaBottom - textAreaTop;
-  const textBlockTop = textAreaTop + (textAreaHeight - totalHeight) / 2;
+  const textBlockTop = zone.zoneTop + (zone.zoneHeight - totalHeight) / 2;
+  const textX = isGradientPhoto ? PAD_X : CANVAS_W / 2;
 
-  ctx.textAlign = 'center';
+  ctx.textAlign = isGradientPhoto ? 'left' : 'center';
   ctx.textBaseline = 'middle';
 
   let cursorY = textBlockTop;
@@ -613,26 +709,34 @@ function drawDesign(canvas, design, title, seed) {
     const centerY = cursorY + lineHeights[i] / 2;
 
     ctx.save();
-    if (design.customImage) {
-      // Fixed white-fill + thick black-outline combo: this pairing stays
-      // readable no matter which photo the user attaches or how busy/bright
-      // it is — no shadow or dark band behind the text needed.
+    if (design.customImage && isGradientPhoto) {
+      // photo is sharp + already dark-faded behind the text, so a soft drop
+      // shadow (no hard outline) is enough to keep the white title crisp —
+      // this matches a clean Pinterest-pin title look.
+      ctx.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur = fs * 0.14;
+      ctx.shadowOffsetY = fs * 0.03;
+      ctx.fillStyle = '#ffffff';
+    } else if (design.customImage) {
+      // legacy blur style: fixed white-fill + thick black-outline combo, so
+      // it stays readable no matter which photo is attached.
       ctx.lineJoin = 'round';
       ctx.lineWidth = Math.max(3, fs * 0.06);
       ctx.strokeStyle = '#000000';
-      ctx.strokeText(lineObj.text, CANVAS_W / 2, centerY);
+      ctx.strokeText(lineObj.text, textX, centerY);
       ctx.fillStyle = '#ffffff';
     } else {
       // no image attached — use the design's own bold color palette
       ctx.fillStyle = design.colors[lineObj.group % design.colors.length];
     }
-    ctx.fillText(lineObj.text, CANVAS_W / 2, centerY);
+    ctx.fillText(lineObj.text, textX, centerY);
     ctx.restore();
 
     cursorY += lineHeights[i];
   });
 
-  drawWatermark(ctx, design);
+  // if the title sits at the bottom, the watermark moves up top so the two never overlap
+  drawWatermark(ctx, design, textPosition);
 }
 
 function luminance(hex) {
@@ -655,9 +759,11 @@ function effectiveBgLuminance(design) {
   return luminance(design.bg);
 }
 
-function drawWatermark(ctx, design) {
+function drawWatermark(ctx, design, textPosition) {
   const isLight = effectiveBgLuminance(design) > 150;
-  const y = CANVAS_H - 60; // lifted up from the very bottom edge for cleaner branding
+  // watermark normally sits near the bottom; if the title itself is
+  // bottom-anchored, the watermark flips to the top so they never collide
+  const y = textPosition === 'bottom' ? 60 : CANVAS_H - 60;
 
   ctx.save();
   ctx.font = '600 30px "Fredoka", Arial, sans-serif';
@@ -775,7 +881,7 @@ function buildTopButtonGroup(canvas, design, idx, title, onImageChange, onBgTogg
       const img = new Image();
       img.onload = () => {
         design.customImage = img;
-        if (typeof design.imageOpacity !== 'number') design.imageOpacity = DEFAULT_IMAGE_OPACITY;
+        if (!design.photoStyle) design.photoStyle = DEFAULT_PHOTO_STYLE;
         imgBtn.classList.add('active');
         imgBtn.textContent = '🖼️ Change';
         drawDesign(canvas, design, title, idx);
@@ -795,6 +901,22 @@ function buildTopButtonGroup(canvas, design, idx, title, onImageChange, onBgTogg
     onBgToggle();
   });
 
+  // cycles the title's vertical position: Top → Center → Bottom → Top...
+  // (if it lands on Bottom, drawWatermark automatically moves the watermark up top)
+  const TEXT_POSITION_LABELS = { top: '⬆️ Top', center: '↕️ Center', bottom: '⬇️ Bottom' };
+  const TEXT_POSITION_ORDER = ['top', 'center', 'bottom'];
+  const posBtn = document.createElement('button');
+  posBtn.className = 'pos-btn';
+  posBtn.title = 'Text position (Top / Center / Bottom)';
+  posBtn.textContent = TEXT_POSITION_LABELS[resolveTextPosition(design)];
+  posBtn.addEventListener('click', () => {
+    const current = resolveTextPosition(design);
+    const next = TEXT_POSITION_ORDER[(TEXT_POSITION_ORDER.indexOf(current) + 1) % TEXT_POSITION_ORDER.length];
+    design.textPosition = next;
+    posBtn.textContent = TEXT_POSITION_LABELS[next];
+    drawDesign(canvas, design, title, idx);
+  });
+
   const dlBtn = document.createElement('button');
   dlBtn.textContent = '⬇️ Download';
   dlBtn.addEventListener('click', () => {
@@ -807,29 +929,54 @@ function buildTopButtonGroup(canvas, design, idx, title, onImageChange, onBgTogg
   });
 
   btnGroup.appendChild(imgBtn);
+  btnGroup.appendChild(posBtn);
   btnGroup.appendChild(bgBtn);
   btnGroup.appendChild(dlBtn);
   btnGroup.appendChild(fileInput);
   return { btnGroup, imgBtn };
 }
 
-// builds the visibility-slider row shown once a photo has been attached to a card
-function buildImageControls(canvas, design, idx, title, imgBtn) {
+// builds the visibility/style row shown once a photo has been attached to a card:
+// a style toggle (Sharp+Gradient default vs legacy Blur), a strength slider
+// whose label/value follows whichever style is active, and a remove button.
+function buildImageControls(canvas, design, idx, title, imgBtn, onRemove) {
   const row = document.createElement('div');
   row.className = 'control-row';
   row.style.display = 'none';
 
   const label = document.createElement('span');
   label.className = 'ic-label';
-  label.textContent = '🔅 Visibility';
 
   const slider = document.createElement('input');
   slider.type = 'range';
   slider.min = '0';
   slider.max = '100';
-  slider.value = String(Math.round(DEFAULT_IMAGE_OPACITY * 100));
+
+  const styleBtn = document.createElement('button');
+  styleBtn.className = 'remove-img-btn';
+  styleBtn.style.background = '#334155';
+  styleBtn.style.whiteSpace = 'nowrap';
+
+  function refreshForStyle() {
+    const style = design.photoStyle || DEFAULT_PHOTO_STYLE;
+    label.textContent = style === 'gradient' ? '🌑 Fade Strength' : '🔅 Visibility';
+    slider.value = String(Math.round(getEffectiveImageValue(design) * 100));
+    styleBtn.textContent = style === 'gradient' ? '🌓 Sharp' : '🌫️ Blur';
+    styleBtn.title = style === 'gradient'
+      ? 'Sharp photo + top gradient + left-align text (current) — click to switch to blurred/centered'
+      : 'Blurred + centered photo (current) — click to switch to sharp photo + top gradient + left-align text';
+  }
+
   slider.addEventListener('input', () => {
     design.imageOpacity = Number(slider.value) / 100;
+    drawDesign(canvas, design, title, idx);
+  });
+
+  styleBtn.addEventListener('click', () => {
+    const current = design.photoStyle || DEFAULT_PHOTO_STYLE;
+    design.photoStyle = current === 'gradient' ? 'blur' : 'gradient';
+    design.imageOpacity = null; // fall back to the new style's own default strength
+    refreshForStyle();
     drawDesign(canvas, design, title, idx);
   });
 
@@ -843,21 +990,80 @@ function buildImageControls(canvas, design, idx, title, imgBtn) {
     imgBtn.classList.remove('active');
     imgBtn.textContent = '🖼️ Image';
     drawDesign(canvas, design, title, idx);
+    if (typeof onRemove === 'function') onRemove();
   });
 
   row.appendChild(label);
   row.appendChild(slider);
+  row.appendChild(styleBtn);
   row.appendChild(removeBtn);
 
   const show = () => {
-    slider.value = String(Math.round((design.imageOpacity ?? DEFAULT_IMAGE_OPACITY) * 100));
+    refreshForStyle();
     row.style.display = 'flex';
   };
 
   return { row, show };
 }
 
-// builds the background-colour row: a colour picker (acts as the "colour wheel"),
+// builds a "which part of the photo shows where" row — Horizontal + Vertical
+// sliders acting like CSS background-position, so the user decides which part
+// of their photo stays in frame after the cover-crop.
+function buildImagePositionControls(canvas, design, idx, title) {
+  const row = document.createElement('div');
+  row.className = 'control-row';
+  row.style.display = 'none';
+
+  const label = document.createElement('span');
+  label.className = 'ic-label';
+  label.textContent = '📍 Position';
+
+  const hSlider = document.createElement('input');
+  hSlider.type = 'range';
+  hSlider.min = '0';
+  hSlider.max = '100';
+  hSlider.title = 'Horizontal — image ka kaunsa hissa left/right mein dikhega';
+
+  const vSlider = document.createElement('input');
+  vSlider.type = 'range';
+  vSlider.min = '0';
+  vSlider.max = '100';
+  vSlider.title = 'Vertical — image ka kaunsa hissa upar/neeche dikhega';
+
+  hSlider.addEventListener('input', () => {
+    design.imagePosX = Number(hSlider.value) / 100;
+    drawDesign(canvas, design, title, idx);
+  });
+  vSlider.addEventListener('input', () => {
+    design.imagePosY = Number(vSlider.value) / 100;
+    drawDesign(canvas, design, title, idx);
+  });
+
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'remove-img-btn';
+  resetBtn.textContent = '✖';
+  resetBtn.title = 'Position center par reset karein';
+  resetBtn.addEventListener('click', () => {
+    design.imagePosX = null;
+    design.imagePosY = null;
+    hSlider.value = '50';
+    vSlider.value = '50';
+    drawDesign(canvas, design, title, idx);
+  });
+
+  row.appendChild(label);
+  row.appendChild(hSlider);
+  row.appendChild(vSlider);
+  row.appendChild(resetBtn);
+
+  const show = () => {
+    hSlider.value = String(Math.round(((typeof design.imagePosX === 'number') ? design.imagePosX : 0.5) * 100));
+    vSlider.value = String(Math.round(((typeof design.imagePosY === 'number') ? design.imagePosY : 0.5) * 100));
+    row.style.display = 'flex';
+  };
+
+  return { row, show };
+}
 // a Gradient toggle that reveals a second picker, and a reset back to the auto design
 function buildBgColorControls(canvas, design, idx, title) {
   const row = document.createElement('div');
@@ -947,7 +1153,7 @@ generateBtn.addEventListener('click', async () => {
     const footTop = document.createElement('div');
     footTop.className = 'foot top';
     const bgControls = buildBgColorControls(canvas, design, idx, title);
-    const { btnGroup, imgBtn } = buildTopButtonGroup(canvas, design, idx, title, () => imgControls.show(), () => bgControls.toggleShow());
+    const { btnGroup, imgBtn } = buildTopButtonGroup(canvas, design, idx, title, () => { imgControls.show(); posControls.show(); }, () => bgControls.toggleShow());
     if (design.customImage) {
       imgBtn.classList.add('active');
       imgBtn.textContent = '🖼️ Change';
@@ -957,10 +1163,19 @@ generateBtn.addEventListener('click', async () => {
 
     card.appendChild(canvas);
 
-    // visibility slider row — hidden until a photo is attached to this card
-    const imgControls = buildImageControls(canvas, design, idx, title, imgBtn);
+    // visibility/style slider row — hidden until a photo is attached to this card
+    const imgControls = buildImageControls(canvas, design, idx, title, imgBtn, () => {
+      posControls.row.style.display = 'none';
+      design.imagePosX = null;
+      design.imagePosY = null;
+    });
     card.appendChild(imgControls.row);
-    if (design.customImage) imgControls.show();
+
+    // position row — lets the user pick which part of the photo stays in frame
+    const posControls = buildImagePositionControls(canvas, design, idx, title);
+    card.appendChild(posControls.row);
+
+    if (design.customImage) { imgControls.show(); posControls.show(); }
 
     // background colour row — hidden until the "🎨 BG" button is toggled
     card.appendChild(bgControls.row);
