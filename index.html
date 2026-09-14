@@ -172,49 +172,28 @@
     .controls { flex-direction: column; }
     button { width: 100%; }
   }
-  .shuffle-card {
-    background: #fff;
-    border-radius: 14px;
-    padding: 18px;
-    margin: 0 0 28px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    text-align: center;
-  }
-  .shuffle-card canvas {
+  select.style-select {
+    grid-column: 1 / -1;
+    font-size: 0.7rem;
+    padding: 8px 6px;
+    border-radius: 8px;
+    border: none;
+    background: #4338ca;
+    color: #fff;
+    cursor: pointer;
     width: 100%;
-    max-width: 260px;
-    height: auto;
-    aspect-ratio: 2 / 3;
-    display: block;
-    margin: 0 auto 16px;
-    border-radius: 10px;
-    background: #eee;
   }
-  .shuffle-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  .shuffle-actions button { font-size: 0.95rem; }
+  select.style-select:hover { background: #3730a3; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>📝 Blog Title Image Generator</h1>
-  <p class="sub">Blog title daaliye — 99 alag clean, minimalist designs banengi: soft neutral background, ek near-mono text color aur ek gentle accent color, koi decorative shapes ya bright pops nahi — sirf saaf, uncluttered typography, har ek apne alag color combination ke saath. Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega. Kisi bhi design par "🖼️ Image" button se apni khud ki koi bhi photo background bana sakte hain — image apne aap halka blur ho jayegi taaki text saaf padha ja sake, aur "Visibility" slider se image ko kam ya jyada dikha sakte hain.</p>
+  <p class="sub">Blog title daaliye — 99 alag clean, minimalist designs banengi: soft neutral background, ek near-mono text color aur ek gentle accent color, koi decorative shapes ya bright pops nahi — sirf saaf, uncluttered typography, har ek apne alag color combination ke saath. Special characters (: , - | ; ! ?) par text apne aap next line par chala jaayega. Kisi bhi design par "🖼️ Image" button se apni khud ki koi bhi photo background bana sakte hain — image apne aap halka blur ho jayegi taaki text saaf padha ja sake, aur "Visibility" slider se image ko kam ya jyada dikha sakte hain. Har card par "Aa Style" dropdown se 8 text styles mein se koi bhi chunkar apne text ka font/look badal sakte hain.</p>
 
   <div class="controls">
     <textarea id="titleInput" placeholder="Apna blog title yahan likhein... e.g. Nice Guy Syndrome: The Hidden Psychology Behind It"></textarea>
     <button id="generateBtn">🎨 Sabhi Designs Banayein</button>
-  </div>
-
-  <div class="shuffle-card">
-    <canvas id="shuffleCanvas"></canvas>
-    <div class="shuffle-actions">
-      <button id="shuffleBtn">🔀 Shuffle Design</button>
-      <button id="shuffleDownloadBtn" class="secondary" style="display:none;">⬇️ Download</button>
-    </div>
   </div>
 
   <div id="status"></div>
@@ -240,22 +219,24 @@ const SPECIAL_CHARS = [':','-','–','—','|',';','!','?',','];
 
 // ---- Building blocks used to generate 99 minimalist, varied templates ----
 
-// Bold/black-weight display fonts only (Fredoka hata di gayi hai — baaki sabke saamne thin dikhti thi;
-// wo ab sirf watermark ke liye use hogi)
-const FONTS = [
-  { family: '"Baloo 2"',       weight: 800 },
-  { family: '"Anton"',         weight: 400 }, // Anton is a black-weight display font by design
-  { family: '"Archivo Black"', weight: 400 }, // Archivo Black is bold by design
-  { family: '"Poppins"',       weight: 800 },
-  { family: '"Montserrat"',    weight: 800 },
-  { family: '"Rubik"',         weight: 800 },
-  { family: '"Kanit"',         weight: 800 },
+// 8 selectable Text Styles — each card auto-gets one by default (cycled),
+// but the user can pick any of the 8 for that card from the "Aa Style" dropdown.
+const TEXT_STYLES = [
+  { id: 0, label: 'Bold Classic',    family: '"Poppins"',       weight: 800, case: 'upper' },
+  { id: 1, label: 'Impact Anton',    family: '"Anton"',         weight: 400, case: 'upper' },
+  { id: 2, label: 'Archivo Sharp',   family: '"Archivo Black"', weight: 400, case: 'upper' },
+  { id: 3, label: 'Montserrat Heavy',family: '"Montserrat"',    weight: 800, case: 'upper' },
+  { id: 4, label: 'Rubik Bold',      family: '"Rubik"',         weight: 800, case: 'upper' },
+  { id: 5, label: 'Kanit Bold',      family: '"Kanit"',         weight: 800, case: 'upper' },
+  { id: 6, label: 'Baloo Rounded',   family: '"Baloo 2"',       weight: 800, case: 'normal' },
+  { id: 7, label: 'Fredoka Soft',    family: '"Fredoka"',       weight: 700, case: 'normal' },
 ];
 
-// picks 3 distinct bold fonts for one design (deterministic per index, always varied)
-function getFontTrio(i) {
-  const n = FONTS.length;
-  return [FONTS[i % n], FONTS[(i + 2) % n], FONTS[(i + 4) % n]];
+// resolves the active text style for a design: explicit user pick always wins,
+// otherwise falls back to the default cycled index assigned at build time
+function resolveTextStyle(design) {
+  const i = (typeof design.textStyleIndex === 'number') ? design.textStyleIndex : 0;
+  return TEXT_STYLES[i % TEXT_STYLES.length];
 }
 
 
@@ -286,7 +267,7 @@ function buildMinimalDesigns() {
   }
   return combos.map((c, i) => ({
     name: '', bg: c.bg, colors: c.colors,
-    fonts: getFontTrio(i + 4),
+    textStyleIndex: i % TEXT_STYLES.length, // default text style, cycled 0-7; user can override per card
     accent: null, // minimalist = clean typography only, no bars/corners/frames/dots
     category: 'minimal', bgType: 'minimal'
   }));
@@ -356,27 +337,25 @@ function wrapSegment(ctx, text, maxWidth) {
   return lines;
 }
 
-function buildLinesForDesign(ctx, styleSegments, design, fontSize, maxWidth) {
+function buildLinesForDesign(ctx, styleSegments, font, fontSize, maxWidth) {
   const lines = [];
+  ctx.font = `${font.weight} ${fontSize}px ${font.family}`;
   styleSegments.forEach(seg => {
-    const font = design.fonts[seg.group % design.fonts.length];
-    ctx.font = `${font.weight} ${fontSize}px ${font.family}`;
     const subLines = wrapSegment(ctx, seg.text, maxWidth);
     subLines.forEach(sl => lines.push({ text: sl, group: seg.group }));
   });
   return lines;
 }
 
-function fitText(ctx, styleSegments, design, availableHeightOverride) {
+function fitText(ctx, styleSegments, font, availableHeightOverride) {
   const maxWidth = CANVAS_W - PAD_X * 2;
   const availableHeight = availableHeightOverride || (CANVAS_H - PAD_Y * 2 - WATERMARK_RESERVE);
   let chosen = null;
 
   for (let fs = MAX_FONT; fs >= MIN_FONT; fs -= 2) {
-    const lines = buildLinesForDesign(ctx, styleSegments, design, fs, maxWidth);
+    const lines = buildLinesForDesign(ctx, styleSegments, font, fs, maxWidth);
+    ctx.font = `${font.weight} ${fs}px ${font.family}`;
     const widths = lines.map(l => {
-      const font = design.fonts[l.group % design.fonts.length];
-      ctx.font = `${font.weight} ${fs}px ${font.family}`;
       return ctx.measureText(l.text).width;
     });
 
@@ -397,7 +376,7 @@ function fitText(ctx, styleSegments, design, availableHeightOverride) {
 
   if (!chosen) {
     // safety fallback: smallest font, no stretching, guaranteed to fit width
-    const lines = buildLinesForDesign(ctx, styleSegments, design, MIN_FONT, maxWidth);
+    const lines = buildLinesForDesign(ctx, styleSegments, font, MIN_FONT, maxWidth);
     const lineHeights = lines.map(() => MIN_FONT * 1.18);
     chosen = {
       fontSize: MIN_FONT,
@@ -415,7 +394,6 @@ function fitText(ctx, styleSegments, design, availableHeightOverride) {
   if (currentRatio < TARGET_AREA_COVERAGE) {
     const desiredBoost = TARGET_AREA_COVERAGE / currentRatio;
     const widthBoosts = chosen.lines.map((l, i) => {
-      const font = design.fonts[l.group % design.fonts.length];
       ctx.font = `${font.weight} ${chosen.fontSize * chosen.scales[i]}px ${font.family}`;
       const currentWidth = ctx.measureText(l.text).width;
       return currentWidth > 0 ? maxWidth / currentWidth : Infinity;
@@ -686,10 +664,12 @@ function drawDesign(canvas, design, title, seed) {
     }
   }
 
-  const styleSegments = buildStyleSegments(title.toUpperCase());
+  const textStyle = resolveTextStyle(design);
+  const casedTitle = textStyle.case === 'upper' ? title.toUpperCase() : title;
+  const styleSegments = buildStyleSegments(casedTitle);
   const isGradientPhoto = !!(design.customImage && (design.photoStyle || DEFAULT_PHOTO_STYLE) === 'gradient');
 
-  const fit = fitText(ctx, styleSegments, design, textPosition === 'center' ? undefined : zone.zoneHeight);
+  const fit = fitText(ctx, styleSegments, textStyle, textPosition === 'center' ? undefined : zone.zoneHeight);
   const { lines, scales, lineHeights, totalHeight } = fit;
 
   const textBlockTop = zone.zoneTop + (zone.zoneHeight - totalHeight) / 2;
@@ -700,12 +680,11 @@ function drawDesign(canvas, design, title, seed) {
 
   let cursorY = textBlockTop;
 
-  // Each style-group has its own font + its own tied color, so every image
-  // shows at least 3 distinct bold fonts, each with a consistent, matching color.
+  // Every line uses the design's selected Text Style (one font), while each
+  // style-group still keeps its own tied color for a bit of visual rhythm.
   lines.forEach((lineObj, i) => {
-    const groupFont = design.fonts[lineObj.group % design.fonts.length];
     const fs = fit.fontSize * scales[i];
-    ctx.font = `${groupFont.weight} ${fs}px ${groupFont.family}`;
+    ctx.font = `${textStyle.weight} ${fs}px ${textStyle.family}`;
     const centerY = cursorY + lineHeights[i] / 2;
 
     ctx.save();
@@ -805,58 +784,7 @@ const titleInput = document.getElementById('titleInput');
 const grid = document.getElementById('grid');
 const statusEl = document.getElementById('status');
 const zipBtn = document.getElementById('zipBtn');
-const shuffleCanvas = document.getElementById('shuffleCanvas');
-const shuffleBtn = document.getElementById('shuffleBtn');
-const shuffleDownloadBtn = document.getElementById('shuffleDownloadBtn');
 let generatedCanvases = [];
-let lastShuffleIndex = null;
-
-// two-digit zero-padded number, used to build the timestamped filename
-function pad2(n) { return String(n).padStart(2, '0'); }
-
-// builds a filename-safe "date-time-seconds" stamp so every download gets
-// its own unique name, e.g. 2026-09-13_18-42-07
-function timestampStamp() {
-  const d = new Date();
-  const date = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-  const time = `${pad2(d.getHours())}-${pad2(d.getMinutes())}-${pad2(d.getSeconds())}`;
-  return `${date}_${time}`;
-}
-
-// picks a random design (different from the last one shown, when possible)
-// and draws it into the shuffle preview canvas using the current title
-async function shuffleDesign() {
-  const title = titleInput.value.trim();
-  if (!title) {
-    statusEl.textContent = '⚠️ Pehle blog title likhein.';
-    return;
-  }
-  shuffleBtn.disabled = true;
-  await waitForFonts();
-
-  let idx;
-  do {
-    idx = Math.floor(Math.random() * DESIGNS.length);
-  } while (DESIGNS.length > 1 && idx === lastShuffleIndex);
-  lastShuffleIndex = idx;
-
-  drawDesign(shuffleCanvas, DESIGNS[idx], title, idx);
-  shuffleDownloadBtn.style.display = 'inline-block';
-  shuffleBtn.disabled = false;
-}
-
-shuffleBtn.addEventListener('click', shuffleDesign);
-
-shuffleDownloadBtn.addEventListener('click', () => {
-  shuffleCanvas.toBlob(blob => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    // filename always carries the current date, time and seconds, so it's
-    // never the same twice even for the same design
-    a.download = `blog-title-${timestampStamp()}.png`;
-    a.click();
-  });
-});
 
 // builds the top button group: attach/change background photo + BG colour toggle + download
 function buildTopButtonGroup(canvas, design, idx, title, onImageChange, onBgToggle) {
@@ -917,6 +845,22 @@ function buildTopButtonGroup(canvas, design, idx, title, onImageChange, onBgTogg
     drawDesign(canvas, design, title, idx);
   });
 
+  // lets the user pick any of the 8 Text Styles directly for this card
+  const styleSelect = document.createElement('select');
+  styleSelect.className = 'style-select';
+  styleSelect.title = 'Text Style';
+  TEXT_STYLES.forEach(style => {
+    const opt = document.createElement('option');
+    opt.value = String(style.id);
+    opt.textContent = `Aa ${style.label}`;
+    styleSelect.appendChild(opt);
+  });
+  styleSelect.value = String(design.textStyleIndex % TEXT_STYLES.length);
+  styleSelect.addEventListener('change', () => {
+    design.textStyleIndex = Number(styleSelect.value);
+    drawDesign(canvas, design, title, idx);
+  });
+
   const dlBtn = document.createElement('button');
   dlBtn.textContent = '⬇️ Download';
   dlBtn.addEventListener('click', () => {
@@ -930,6 +874,7 @@ function buildTopButtonGroup(canvas, design, idx, title, onImageChange, onBgTogg
 
   btnGroup.appendChild(imgBtn);
   btnGroup.appendChild(posBtn);
+  btnGroup.appendChild(styleSelect);
   btnGroup.appendChild(bgBtn);
   btnGroup.appendChild(dlBtn);
   btnGroup.appendChild(fileInput);
